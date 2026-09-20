@@ -1,0 +1,31 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/ping_powerup.gd" id="1"]
+
+[sub_resource type="StandardMaterial3D" id="mat"]
+albedo_color = Color(0.45, 1, 0.3, 1)
+emission_enabled = true
+emission = Color(0.45, 1, 0.3, 1)
+emission_energy_multiplier = 3.0
+
+[sub_resource type="BoxMesh" id="dia"]
+material = SubResource("mat")
+size = Vector3(0.28, 0.42, 0.28)
+
+[sub_resource type="SphereShape3D" id="col"]
+radius = 0.7
+
+[node name="PingPowerup" type="Area3D"]
+collision_layer = 0
+collision_mask = 1
+script = ExtResource("1")
+
+[node name="Diamond" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+position = Vector3(0, 0.9, 0)
+rotation = Vector3(0, 0.78, 0)
+mesh = SubResource("dia")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.6, 0)
+shape = SubResource("col")

@@ -26,3 +26,7 @@ show_percentage = false
 [node name="Contacts" type="Label" parent="Top"]
 horizontal_alignment = 1
 text = "KONTAKTE: 0"
+
+[node name="Power" type="Label" parent="Top"]
+horizontal_alignment = 1
+text = "PING +0/7"

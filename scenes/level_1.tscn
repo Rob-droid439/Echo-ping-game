@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="6"]
 [ext_resource type="Environment" uid="uid://ddyojjexb43nw" path="res://scenes/night_env.tres" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="9"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -40,3 +41,12 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.702213, 0.61737823, 24.439
 environment = ExtResource("7")
 
 [node name="SonarHUD" parent="." instance=ExtResource("8")]
+
+[node name="PingPowerup_M1" parent="." instance=ExtResource("9")]
+position = Vector3(28, 0.6, 18)
+
+[node name="PingPowerup_S1" parent="." instance=ExtResource("9")]
+position = Vector3(10, 0.6, 30)
+
+[node name="PingPowerup_W2" parent="." instance=ExtResource("9")]
+position = Vector3(15, 0.6, 10.5)

@@ -6,6 +6,7 @@
 [ext_resource type="Environment" path="res://scenes/night_env.tres" id="4"]
 [ext_resource type="PackedScene" uid="uid://bqtltfprx1fmc" path="res://assets/maps/E_Droid.glb" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="7"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -34,3 +35,12 @@ position = Vector3(30, 0, 68)
 position = Vector3(38, 0, 70)
 
 [node name="SonarHUD" parent="." instance=ExtResource("6")]
+
+[node name="PingPowerup_RuinA" parent="." instance=ExtResource("7")]
+position = Vector3(32, 0.6, 59)
+
+[node name="PingPowerup_RuinB" parent="." instance=ExtResource("7")]
+position = Vector3(32, 0.6, 85)
+
+[node name="PingPowerup_Plaza" parent="." instance=ExtResource("7")]
+position = Vector3(25, 0.6, 68)
