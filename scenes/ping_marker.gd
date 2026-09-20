@@ -18,6 +18,7 @@ func _ready() -> void:
 	_mat.emission = Color(0.3, 1.0, 0.9, 1.0)
 	_mat.emission_energy_multiplier = 3.0
 	_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	_mat.no_depth_test = true
 	var sm := SphereMesh.new()
 	sm.radius = 0.22
 	sm.height = 0.44

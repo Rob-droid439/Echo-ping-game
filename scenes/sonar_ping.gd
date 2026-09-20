@@ -3,8 +3,9 @@
 ## Scannt waehrend der Expansion alle Nodes der Gruppe "echo_receiver":
 ## Wer von der Wellenfront erreicht wird, wird revealed (Marker + Alert-Anim + HUD).
 
-const RMAX: float = 25.0
-const DUR: float = 1.6
+var rmax: float = 25.0
+var expand_speed: float = 15.625
+var _dur: float = 1.6
 const RING2_DELAY: float = 0.25
 const RING2_DUR: float = 2.0
 const MARKER_SCRIPT: Script = preload("res://scenes/ping_marker.gd")
@@ -20,6 +21,7 @@ var _mat2: StandardMaterial3D
 
 
 func _ready() -> void:
+	_dur = rmax / maxf(expand_speed, 0.01)
 	_mat1 = (_ring1.get_active_material(0) as StandardMaterial3D).duplicate()
 	_mat2 = (_ring2.get_active_material(0) as StandardMaterial3D).duplicate()
 	_ring1.set_surface_override_material(0, _mat1)
@@ -29,15 +31,15 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	_t += delta
-	var k1: float = clampf(_t / DUR, 0.0, 1.0)
-	var r1: float = RMAX * (1.0 - pow(1.0 - k1, 2.0))
+	var k1: float = clampf(_t / _dur, 0.0, 1.0)
+	var r1: float = rmax * (1.0 - pow(1.0 - k1, 2.0))
 	_ring1.scale = Vector3(r1, 1.5, r1)
 	_mat1.albedo_color.a = 1.0 - k1
 	_scan(r1)
 	var k2: float = clampf((_t - RING2_DELAY) / RING2_DUR, 0.0, 1.0)
 	if k2 > 0.0:
 		_ring2.visible = true
-		var r2: float = RMAX * (1.0 - pow(1.0 - k2, 2.0))
+		var r2: float = rmax * (1.0 - pow(1.0 - k2, 2.0))
 		_ring2.scale = Vector3(r2, 1.5, r2)
 		_mat2.albedo_color.a = 0.6 * (1.0 - k2)
 	_flash.light_energy = maxf(0.0, 4.0 * (1.0 - _t / 0.8))

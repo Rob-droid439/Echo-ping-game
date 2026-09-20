@@ -7,9 +7,12 @@
 @export var accel: float = 20.0
 @export var jump_velocity: float = 4.5
 @export var mouse_sens: float = 0.0025
-@export var ping_cooldown: float = 4.0
+@export var ping_cooldown: float = 4.0 / 3.0
 
 const PING_SCENE: PackedScene = preload("res://scenes/sonar_ping.tscn")
+const RS: GDScript = preload("res://scenes/run_state.gd")
+const BASE_PING_RMAX: float = 25.0
+const BASE_PING_SPEED: float = 15.625
 
 @onready var cam: Camera3D = $Camera3D
 var _pitch: float = 0.0
@@ -39,6 +42,9 @@ func try_ping() -> bool:
 	if _ping_left > 0.0:
 		return false
 	var ping: Node3D = PING_SCENE.instantiate()
+	var rs = RS.inst(get_tree())
+	ping.set("rmax", BASE_PING_RMAX * rs.radius_mult())
+	ping.set("expand_speed", BASE_PING_SPEED * rs.speed_mult())
 	var host: Node = get_tree().current_scene
 	if host == null:
 		host = get_parent()
