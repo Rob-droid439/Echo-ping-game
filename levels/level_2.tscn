@@ -1,0 +1,36 @@
+[gd_scene format=3 uid="uid://ccl1y7ccxfk2n"]
+
+[ext_resource type="Script" uid="uid://c2aubibys01w8" path="res://levels/exit_trigger.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://dhkxc7n5cjnyt" path="res://assets/levels/EchoCart_L2.glb" id="2"]
+[ext_resource type="PackedScene" path="res://levels/player.tscn" id="3"]
+[ext_resource type="Environment" path="res://levels/night_env.tres" id="4"]
+[ext_resource type="PackedScene" uid="uid://bqtltfprx1fmc" path="res://assets/levels/E_Droid.glb" id="5"]
+[ext_resource type="PackedScene" path="res://levels/sonar_hud.tscn" id="6"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(1, 4, 3.6)
+
+[node name="Level2" type="Node3D" unique_id=1175370527]
+
+[node name="EchoCart_L2" parent="." unique_id=461155853 instance=ExtResource("2")]
+
+[node name="ExitTrigger" type="Area3D" parent="." unique_id=432783713]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 63, 2, 85)
+script = ExtResource("1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitTrigger" unique_id=788145173]
+shape = SubResource("BoxShape3D_exit")
+
+[node name="Player" parent="." unique_id=1173757820 instance=ExtResource("3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.4190636, 0.3479576, 75.19314)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=716660771]
+environment = ExtResource("4")
+
+[node name="E_Droid_A" parent="." groups=["echo_receiver"] instance=ExtResource("5")]
+position = Vector3(30, 0, 68)
+
+[node name="E_Droid_B" parent="." groups=["echo_receiver"] instance=ExtResource("5")]
+position = Vector3(38, 0, 70)
+
+[node name="SonarHUD" parent="." instance=ExtResource("6")]

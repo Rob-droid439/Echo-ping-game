@@ -1,0 +1,42 @@
+[gd_scene format=3 uid="uid://bq10iyhpg14h6"]
+
+[ext_resource type="Script" uid="uid://c2aubibys01w8" path="res://levels/exit_trigger.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://cnm5ypbxfirr6" path="res://assets/levels/EchoCart_L1.glb" id="2"]
+[ext_resource type="PackedScene" uid="uid://qewdmi816qrh" path="res://assets/levels/D_Protagonist.glb" id="3_n46q3"]
+[ext_resource type="PackedScene" uid="uid://bqtltfprx1fmc" path="res://assets/levels/E_Droid.glb" id="4_btoec"]
+[ext_resource type="PackedScene" uid="uid://bor8li5lb3t37" path="res://assets/levels/FX_SonarPing_Ring.glb" id="5_gwceb"]
+[ext_resource type="PackedScene" path="res://levels/player.tscn" id="6"]
+[ext_resource type="Environment" uid="uid://ddyojjexb43nw" path="res://levels/night_env.tres" id="7"]
+[ext_resource type="PackedScene" path="res://levels/sonar_hud.tscn" id="8"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
+size = Vector3(1, 4, 3.6)
+
+[node name="Level1" type="Node3D" unique_id=1897899267]
+
+[node name="EchoCart_L1" parent="." unique_id=1487592677 instance=ExtResource("2")]
+
+[node name="ExitTrigger" type="Area3D" parent="." unique_id=1278229422]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 62.5, 2, 34)
+script = ExtResource("1")
+target_scene = "res://levels/level_2.tscn"
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitTrigger" unique_id=501209856]
+shape = SubResource("BoxShape3D_exit")
+
+[node name="D_Protagonist" parent="." unique_id=1685446589 instance=ExtResource("3_n46q3")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47.103348, 0.0005000368, 7.0084305)
+
+[node name="E_Droid" parent="." groups=["echo_receiver"] unique_id=110288932 instance=ExtResource("4_btoec")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.319405, -3.8146973e-06, 5.456665)
+
+[node name="FX_SonarPing_Ring2" parent="." unique_id=1758745563 instance=ExtResource("5_gwceb")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.415344, 0, 6.157593)
+
+[node name="Player" parent="." unique_id=2047181400 instance=ExtResource("6")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14.702213, 0.61737823, 24.439842)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = ExtResource("7")
+
+[node name="SonarHUD" parent="." instance=ExtResource("8")]
