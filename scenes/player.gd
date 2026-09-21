@@ -10,6 +10,8 @@
 @export var mouse_sens: float = 0.0025
 @export var turn_speed: float = 10.0
 @export var ping_cooldown: float = 4.0 / 3.0
+@export var cam_pitch_min: float = -1.0
+@export var cam_pitch_max: float = 0.35
 
 const PING_SCENE: PackedScene = preload("res://scenes/sonar_ping.tscn")
 const RS: GDScript = preload("res://scenes/run_state.gd")
@@ -32,6 +34,13 @@ func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_spawn_pos = global_position
 	_spawn_yaw = rotation.y
+	rotation.x = 0.0
+	rotation.z = 0.0
+	# Stabile Third-Person-Kamera: eigene Kapsel ignorieren (sonst snappt
+	# der Arm auf ~0 und poppt raus), nur Welt (Mask 1), Shape=Sphere aus tscn.
+	_arm.collision_mask = 1
+	_arm.add_excluded_object(get_rid())
+	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 	_ap = _rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	for a in ["D_Anim_Idle", "D_Anim_Walk"]:
 		if _ap.has_animation(a):
@@ -42,10 +51,11 @@ func _ready() -> void:
 
 func respawn() -> void:
 	global_position = _spawn_pos
-	rotation.y = _spawn_yaw
+	rotation = Vector3(0.0, _spawn_yaw, 0.0)
 	velocity = Vector3.ZERO
 	_ping_left = 0.0
 	_ping_anim = 0.0
+	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -55,8 +65,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * mouse_sens)
-		_pitch = clampf(_pitch - event.relative.y * mouse_sens, -1.2, 0.6)
-		_arm.rotation.x = _pitch
+		rotation.x = 0.0
+		rotation.z = 0.0
+		_pitch = clampf(_pitch - event.relative.y * mouse_sens, cam_pitch_min, cam_pitch_max)
+		_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 	elif event is InputEventKey and event.pressed and not event.echo:
 		if event.physical_keycode == KEY_E:
 			cast_ping()
@@ -113,6 +125,9 @@ func _physics_process(delta: float) -> void:
 	elif Input.is_physical_key_pressed(KEY_SPACE):
 		velocity.y = jump_velocity
 	move_and_slide()
+	# Upright-Lock: verhindert schleichendes Verkippen -> inkonsistente Cam.
+	rotation.x = 0.0
+	rotation.z = 0.0
 	_update_anim(delta)
 
 
