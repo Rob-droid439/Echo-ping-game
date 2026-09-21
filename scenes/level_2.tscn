@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://dhkxc7n5cjnyt" path="res://assets/maps/EchoCart_L2.glb" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3"]
 [ext_resource type="Environment" path="res://scenes/night_env.tres" id="4"]
-[ext_resource type="PackedScene" uid="uid://bqtltfprx1fmc" path="res://assets/maps/E_Droid.glb" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/e_droid.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="7"]
 

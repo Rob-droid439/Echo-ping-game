@@ -23,17 +23,29 @@ var _ap: AnimationPlayer
 var _pitch: float = -0.18
 var _ping_left: float = 0.0
 var _ping_anim: float = 0.0
+var _spawn_pos := Vector3.ZERO
+var _spawn_yaw := 0.0
 
 
 func _ready() -> void:
 	add_to_group("player")
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	_spawn_pos = global_position
+	_spawn_yaw = rotation.y
 	_ap = _rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	for a in ["D_Anim_Idle", "D_Anim_Walk"]:
 		if _ap.has_animation(a):
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("D_Anim_Idle")
 	_arm.rotation.x = _pitch
+
+
+func respawn() -> void:
+	global_position = _spawn_pos
+	rotation.y = _spawn_yaw
+	velocity = Vector3.ZERO
+	_ping_left = 0.0
+	_ping_anim = 0.0
 
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -11,6 +11,7 @@ const RING2_DUR: float = 2.0
 const MARKER_SCRIPT: Script = preload("res://scenes/ping_marker.gd")
 
 var _t: float = 0.0
+var _r_now: float = 0.0
 var _hit: Array = []
 var _mat1: StandardMaterial3D
 var _mat2: StandardMaterial3D
@@ -21,6 +22,7 @@ var _mat2: StandardMaterial3D
 
 
 func _ready() -> void:
+	add_to_group("active_ping")
 	_dur = rmax / maxf(expand_speed, 0.01)
 	_mat1 = (_ring1.get_active_material(0) as StandardMaterial3D).duplicate()
 	_mat2 = (_ring2.get_active_material(0) as StandardMaterial3D).duplicate()
@@ -33,6 +35,7 @@ func _physics_process(delta: float) -> void:
 	_t += delta
 	var k1: float = clampf(_t / _dur, 0.0, 1.0)
 	var r1: float = rmax * (1.0 - pow(1.0 - k1, 2.0))
+	_r_now = r1
 	_ring1.scale = Vector3(r1, 1.5, r1)
 	_mat1.albedo_color.a = 1.0 - k1
 	_scan(r1)
@@ -46,6 +49,10 @@ func _physics_process(delta: float) -> void:
 	_flash.omni_range = maxf(4.0, r1)
 	if _t > RING2_DELAY + RING2_DUR + 0.2:
 		queue_free()
+
+
+func get_radius() -> float:
+	return _r_now
 
 
 func _scan(radius: float) -> void:

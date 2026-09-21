@@ -3,10 +3,10 @@
 [ext_resource type="Script" path="res://scenes/exit_trigger.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://cnm5ypbxfirr6" path="res://assets/maps/EchoCart_L1.glb" id="2"]
 [ext_resource type="PackedScene" uid="uid://qewdmi816qrh" path="res://assets/maps/D_Protagonist.glb" id="3_n46q3"]
-[ext_resource type="PackedScene" uid="uid://bqtltfprx1fmc" path="res://assets/maps/E_Droid.glb" id="4_btoec"]
+[ext_resource type="PackedScene" path="res://scenes/e_droid.tscn" id="4_btoec"]
 [ext_resource type="PackedScene" uid="uid://bor8li5lb3t37" path="res://assets/maps/FX_SonarPing_Ring.glb" id="5_gwceb"]
 [ext_resource type="PackedScene" path="res://scenes/player.tscn" id="6"]
-[ext_resource type="Environment" uid="uid://ddyojjexb43nw" path="res://scenes/night_env.tres" id="7"]
+[ext_resource type="Environment" path="res://scenes/night_env.tres" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="9"]
 
