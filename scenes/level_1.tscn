@@ -26,7 +26,7 @@ target_scene = "res://scenes/level_2.tscn"
 shape = SubResource("BoxShape3D_exit")
 
 [node name="D_Protagonist" parent="." unique_id=1685446589 instance=ExtResource("3_n46q3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 47.103348, 0.0005000368, 7.0084305)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.103348, 0.0005000368, 5.0084305)
 
 [node name="E_Droid" parent="." groups=["echo_receiver"] unique_id=110288932 instance=ExtResource("4_btoec")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.319405, -3.8146973e-06, 5.456665)

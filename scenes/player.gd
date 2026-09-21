@@ -27,6 +27,7 @@ var _ping_left: float = 0.0
 var _ping_anim: float = 0.0
 var _spawn_pos := Vector3.ZERO
 var _spawn_yaw := 0.0
+var _excluded: Array = []
 
 
 func _ready() -> void:
@@ -36,10 +37,13 @@ func _ready() -> void:
 	_spawn_yaw = rotation.y
 	rotation.x = 0.0
 	rotation.z = 0.0
-	# Stabile Third-Person-Kamera: eigene Kapsel ignorieren (sonst snappt
+	# Stabile Third-Person-Kamera: eigene Kapsel + Droiden ignorieren (sonst snappt
 	# der Arm auf ~0 und poppt raus), nur Welt (Mask 1), Shape=Sphere aus tscn.
 	_arm.collision_mask = 1
 	_arm.add_excluded_object(get_rid())
+	_excluded.append(get_rid())
+	_exclude_actors()
+	call_deferred("_exclude_actors")
 	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 	_ap = _rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	for a in ["D_Anim_Idle", "D_Anim_Walk"]:
@@ -47,6 +51,20 @@ func _ready() -> void:
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("D_Anim_Idle")
 	_arm.rotation.x = _pitch
+
+
+func _exclude_actors() -> void:
+	# SpringArm soll nur an der Welt (Layer 1 Statics) kuerzen, nicht an
+	# Droiden-CharacterBodies (Gruppe echo_receiver) – sonst Zoom-Popping,
+	# sobald ein Droid hinter dem Spieler durchlaeuft. Spieler selbst auch.
+	if _arm == null or get_tree() == null:
+		return
+	for n in get_tree().get_nodes_in_group("echo_receiver"):
+		if n is CollisionObject3D:
+			var rid: RID = (n as CollisionObject3D).get_rid()
+			if not _excluded.has(rid):
+				_arm.add_excluded_object(rid)
+				_excluded.append(rid)
 
 
 func respawn() -> void:
@@ -104,6 +122,7 @@ func get_ping_cooldown_frac() -> float:
 
 
 func _physics_process(delta: float) -> void:
+	_exclude_actors()
 	_ping_left = maxf(0.0, _ping_left - delta)
 	_ping_anim = maxf(0.0, _ping_anim - delta)
 	var iv := Vector2.ZERO

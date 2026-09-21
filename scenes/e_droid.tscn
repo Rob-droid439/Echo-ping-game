@@ -5,15 +5,15 @@
 
 [sub_resource type="CapsuleShape3D" id="cap"]
 radius = 0.3
-height = 0.9
+height = 1.6
 
 [node name="E_Droid" type="CharacterBody3D"]
 floor_snap_length = 0.3
 script = ExtResource("1")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.45, 0)
+position = Vector3(0, 0.8, 0)
 shape = SubResource("cap")
 
 [node name="Rig" parent="." instance=ExtResource("2")]
-position = Vector3(0, 0.15, 0)
+position = Vector3(-1.7, 0.15, 0)
