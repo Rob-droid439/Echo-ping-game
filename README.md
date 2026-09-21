@@ -10,7 +10,7 @@ Since he was a future-robot-mechanic (obviously), he has an echogun, which sends
 
 So, your standard dystopian social media-terminator cliché in which there is an AI that destroys humanity,
 packaged in a game with many levels and great graphics.
-------------
+
 
 Tech:
 ------------
