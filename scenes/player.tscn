@@ -1,34 +1,34 @@
-﻿[gd_scene load_steps=5 format=3]
+[gd_scene format=3 uid="uid://l1uxx6dvd1y5"]
 
-[ext_resource type="Script" path="res://scenes/player.gd" id="1"]
-[ext_resource type="PackedScene" path="res://assets/maps/D_Protagonist.glb" id="2"]
+[ext_resource type="Script" uid="uid://bpcqace88t5vx" path="res://scenes/player.gd" id="1"]
+[ext_resource type="PackedScene" uid="uid://qewdmi816qrh" path="res://assets/maps/D_Protagonist.glb" id="2"]
 
 [sub_resource type="CapsuleShape3D" id="cap"]
 radius = 0.35
-height = 1.7
+height = 1.9
 
 [sub_resource type="SphereShape3D" id="cam_shape"]
-radius = 0.25
+radius = 0.2
 
-[node name="Player" type="CharacterBody3D"]
-floor_snap_length = 0.3
+[node name="Player" type="CharacterBody3D" unique_id=1350311549]
+floor_snap_length = 0.4
+safe_margin = 0.1
 script = ExtResource("1")
 
-[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
-position = Vector3(0, 0.9, 0)
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=106736920]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
 shape = SubResource("cap")
 
-[node name="Rig" parent="." instance=ExtResource("2")]
-position = Vector3(-2, 0, -2)
+[node name="Rig" parent="." unique_id=1692398291 instance=ExtResource("2")]
 
-[node name="CamArm" type="SpringArm3D" parent="."]
-position = Vector3(0, 1.45, 0)
-collision_mask = 1
-spring_length = 3.6
-margin = 0.1
+[node name="CamArm" type="SpringArm3D" parent="." unique_id=1715727313]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.65, 0)
 shape = SubResource("cam_shape")
+spring_length = 3.0
+margin = 0.1
 
-[node name="Camera3D" type="Camera3D" parent="CamArm"]
+[node name="Camera3D" type="Camera3D" parent="CamArm" unique_id=1146921540]
+h_offset = 0.45
 current = true
 fov = 70.0
-near = 0.1
+far = 200.0

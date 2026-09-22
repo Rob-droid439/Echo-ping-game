@@ -73,7 +73,7 @@ func _reveal(rec: Node) -> void:
 		mk.set_script(MARKER_SCRIPT)
 		mk.name = "PingMarker"
 		rec.add_child(mk)
-		mk.position = Vector3(0.0, 2.2, 0.0)
+		mk.position = Vector3(0.0, 2.0, 0.0)
 		var hud: Node = get_tree().get_first_node_in_group("sonar_hud")
 		if hud != null and hud.has_method("add_contact"):
 			hud.add_contact()

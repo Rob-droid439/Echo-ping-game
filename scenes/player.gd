@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 ## Third-Person-Protagonist fuer Echo Cartographer 3D.
 ## D-Rig (Idle/Walk/PingCast) + SpringArm-Kamera. WASD kamerarelativ,
 ## Leertaste springen, E = Sonar-Ping (mit Wurf-Animation).
@@ -9,9 +9,12 @@
 @export var jump_velocity: float = 4.5
 @export var mouse_sens: float = 0.0025
 @export var turn_speed: float = 10.0
+@export var rig_yaw_offset: float = 0.0
+@export var cam_arm_length: float = 3.0
+@export var cam_head_fade_dist: float = 0.7
 @export var ping_cooldown: float = 4.0 / 3.0
-@export var cam_pitch_min: float = -1.0
-@export var cam_pitch_max: float = 0.35
+@export var cam_pitch_min: float = -1.2
+@export var cam_pitch_max: float = 0.25
 
 const PING_SCENE: PackedScene = preload("res://scenes/sonar_ping.tscn")
 const RS: GDScript = preload("res://scenes/run_state.gd")
@@ -50,6 +53,7 @@ func _ready() -> void:
 		if _ap.has_animation(a):
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("D_Anim_Idle")
+	_arm.spring_length = cam_arm_length
 	_arm.rotation.x = _pitch
 
 
@@ -73,6 +77,7 @@ func respawn() -> void:
 	velocity = Vector3.ZERO
 	_ping_left = 0.0
 	_ping_anim = 0.0
+	_pitch = -0.18
 	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 
 
@@ -112,7 +117,7 @@ func try_ping() -> bool:
 	if host == null:
 		host = get_parent()
 	host.add_child(ping)
-	ping.global_position = global_position + Vector3(0.0, 0.15, 0.0)
+	ping.global_position = global_position + Vector3(0.0, 1.0, 0.0)
 	_ping_left = ping_cooldown
 	return true
 
@@ -136,14 +141,24 @@ func _physics_process(delta: float) -> void:
 		iv.x += 1.0
 	if iv.length() > 1.0:
 		iv = iv.normalized()
-	var dir: Vector3 = global_transform.basis * Vector3(iv.x, 0.0, iv.y)
+	# Kamerarelativ auf Boden projiziert: nur Yaw zahlt, kein Pitch-Rest.
+	var yaw_basis: Basis = Basis(Vector3.UP, rotation.y)
+	var dir: Vector3 = yaw_basis * Vector3(iv.x, 0.0, iv.y)
+	if dir.length() > 0.001:
+		dir = dir.normalized()
 	velocity.x = move_toward(velocity.x, dir.x * speed, accel * delta)
 	velocity.z = move_toward(velocity.z, dir.z * speed, accel * delta)
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 	elif Input.is_physical_key_pressed(KEY_SPACE):
 		velocity.y = jump_velocity
+	else:
+		velocity.y = minf(velocity.y, 0.0)
 	move_and_slide()
+	# Kamera: Arm ein-/ausfahren lassen, bei Wandnaehe Kopf ausblenden
+	# statt Kamera in den Schaedel zu fahren (First-Person-Fallback).
+	if _arm != null and _rig != null:
+		_rig.visible = _arm.get_hit_length() > cam_head_fade_dist
 	# Upright-Lock: verhindert schleichendes Verkippen -> inkonsistente Cam.
 	rotation.x = 0.0
 	rotation.z = 0.0
@@ -161,4 +176,4 @@ func _update_anim(delta: float) -> void:
 		_ap.play(want, 0.15)
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
 	if flat.length() > 0.5:
-		_rig.rotation.y = lerp_angle(_rig.rotation.y, atan2(-flat.x, -flat.z), turn_speed * delta)
+		_rig.rotation.y = lerp_angle(_rig.rotation.y, atan2(-flat.x, -flat.z) + rig_yaw_offset, turn_speed * delta)

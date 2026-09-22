@@ -166,8 +166,12 @@ func _hearing(delta: float) -> void:
 			r = float(ping.get_radius())
 		var wave: float = exp(-pow(absf(dist - r), 2.0) / (2.0 * WAVE_SIGMA * WAVE_SIGMA))
 		var s: float = fall * (ORIGIN_W + WAVE_W * wave)
+		var excl: Array = [get_rid()]
+		var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
+		if player != null and player is CollisionObject3D:
+			excl.append((player as CollisionObject3D).get_rid())
 		var q := PhysicsRayQueryParameters3D.create(
-			global_position + Vector3(0.0, 0.5, 0.0), po + Vector3(0.0, 0.5, 0.0), 1, [get_rid()])
+			global_position + Vector3(0.0, 0.5, 0.0), po + Vector3(0.0, 0.5, 0.0), 1, excl)
 		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
 			s *= OCCLUDE_DAMP
 		s *= randf_range(0.9, 1.1)
