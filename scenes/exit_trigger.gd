@@ -15,4 +15,5 @@ func _on_body_entered(body: Node3D) -> void:
 	if target_scene.is_empty():
 		return
 	if body.is_in_group("player"):
-		get_tree().change_scene_to_file(target_scene)
+		# Deferred: direkt im Physics-Callback crasht der Szenenwechsel.
+		get_tree().call_deferred("change_scene_to_file", target_scene)

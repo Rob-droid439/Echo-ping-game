@@ -28,3 +28,8 @@ func _process(_delta: float) -> void:
 func add_contact() -> void:
 	contacts += 1
 	_lab.text = "KONTAKTE: %d" % contacts
+
+
+func reset_contacts() -> void:
+	contacts = 0
+	_lab.text = "KONTAKTE: 0"

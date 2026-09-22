@@ -281,6 +281,12 @@ func _update_move(delta: float) -> void:
 
 
 func _caught(player: Node3D) -> void:
+	# Fang-Regel: Menü zeigen (Game Over / Nochmal), Fallback ohne Menü
+	# (z.B. Headless-Verifikation) = sofortiger Respawn wie bisher.
+	var menu: Node = get_tree().get_first_node_in_group("game_over")
+	if menu != null and menu.has_method("play_catch_animation"):
+		menu.play_catch_animation()
+		return
 	if player.has_method("respawn"):
 		player.respawn()
 	for d in get_tree().get_nodes_in_group("echo_receiver"):

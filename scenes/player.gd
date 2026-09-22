@@ -176,4 +176,7 @@ func _update_anim(delta: float) -> void:
 		_ap.play(want, 0.15)
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
 	if flat.length() > 0.5:
-		_rig.rotation.y = lerp_angle(_rig.rotation.y, atan2(-flat.x, -flat.z) + rig_yaw_offset, turn_speed * delta)
+		# Rig ist Kind des Bodies: Welt-Yaw in Body-lokal umrechnen.
+		# Sonst steht das Mesh bei gedrehter Kamera (Body-Yaw != 0) schief.
+		var target_world := atan2(-flat.x, -flat.z) + rig_yaw_offset
+		_rig.rotation.y = lerp_angle(_rig.rotation.y, target_world - rotation.y, turn_speed * delta)

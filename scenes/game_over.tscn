@@ -1,0 +1,47 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/game_over.gd" id="1"]
+
+[node name="GameOver" type="CanvasLayer"]
+process_mode = 3
+script = ExtResource("1")
+
+[node name="Dim" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.72)
+
+[node name="Center" type="CenterContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Panel" type="PanelContainer" parent="Center"]
+
+[node name="Margin" type="MarginContainer" parent="Center/Panel"]
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="Center/Panel/Margin"]
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Center/Panel/Margin/VBox"]
+theme_override_font_sizes/font_size = 48
+text = "GAME OVER"
+horizontal_alignment = 1
+
+[node name="Sub" type="Label" parent="Center/Panel/Margin/VBox"]
+theme_override_font_sizes/font_size = 18
+text = "Ein Droid hat dich erwischt."
+horizontal_alignment = 1
+
+[node name="Retry" type="Button" parent="Center/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(260, 44)
+text = "Nochmal"
+
+[node name="Reload" type="Button" parent="Center/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(260, 44)
+text = "Level neu laden"

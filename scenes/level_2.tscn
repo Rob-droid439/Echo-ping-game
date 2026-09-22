@@ -1,12 +1,13 @@
-﻿[gd_scene format=3 uid="uid://ccl1y7ccxfk2n"]
+[gd_scene format=3 uid="uid://hrb6m26oom2w"]
 
-[ext_resource type="Script" path="res://scenes/exit_trigger.gd" id="1"]
+[ext_resource type="Script" uid="uid://canmppag5u85b" path="res://scenes/exit_trigger.gd" id="1"]
 [ext_resource type="PackedScene" uid="uid://dhkxc7n5cjnyt" path="res://assets/maps/EchoCart_L2.glb" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/player.tscn" id="3"]
-[ext_resource type="Environment" path="res://scenes/night_env.tres" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/e_droid.tscn" id="5"]
+[ext_resource type="PackedScene" uid="uid://l1uxx6dvd1y5" path="res://scenes/player.tscn" id="3"]
+[ext_resource type="Environment" uid="uid://cb0hh7gkhdqbh" path="res://scenes/night_env.tres" id="4"]
+[ext_resource type="PackedScene" uid="uid://djaemtbpdo28g" path="res://scenes/e_droid.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="8_ne2mo"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -28,19 +29,21 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.4190636, 0.3479576, 75.1931
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=716660771]
 environment = ExtResource("4")
 
-[node name="E_Droid_A" parent="." groups=["echo_receiver"] instance=ExtResource("5")]
-position = Vector3(30, 0, 68)
+[node name="E_Droid_A" parent="." unique_id=849655691 groups=["echo_receiver"] instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 68)
 
-[node name="E_Droid_B" parent="." groups=["echo_receiver"] instance=ExtResource("5")]
-position = Vector3(38, 0, 70)
+[node name="E_Droid_B" parent="." unique_id=1054124920 groups=["echo_receiver"] instance=ExtResource("5")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 70)
 
-[node name="SonarHUD" parent="." instance=ExtResource("6")]
+[node name="SonarHUD" parent="." unique_id=1269449311 instance=ExtResource("6")]
 
-[node name="PingPowerup_RuinA" parent="." instance=ExtResource("7")]
-position = Vector3(32, 0.6, 59)
+[node name="PingPowerup_RuinA" parent="." unique_id=947221008 instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0.6, 59)
 
-[node name="PingPowerup_RuinB" parent="." instance=ExtResource("7")]
-position = Vector3(32, 0.6, 85)
+[node name="PingPowerup_RuinB" parent="." unique_id=1493948811 instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0.6, 85)
 
-[node name="PingPowerup_Plaza" parent="." instance=ExtResource("7")]
-position = Vector3(25, 0.6, 68)
+[node name="PingPowerup_Plaza" parent="." unique_id=1631521216 instance=ExtResource("7")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.6, 68)
+
+[node name="GameOver" parent="." unique_id=99754736 instance=ExtResource("8_ne2mo")]
