@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="8_ne2mo"]
+[ext_resource type="PackedScene" path="res://scenes/victory.tscn" id="9_6cvei"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -47,3 +48,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0.6, 85)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0.6, 68)
 
 [node name="GameOver" parent="." unique_id=99754736 instance=ExtResource("8_ne2mo")]
+
+[node name="Victory" parent="." unique_id=2039574881 instance=ExtResource("9_6cvei")]

@@ -16,6 +16,8 @@ const SVAR_INT_MIN := 0.2
 const SVAR_INT_MAX := 0.65
 const VISION_RANGE := 9.0
 const VISION_DOT := 0.8829
+const EYE_H := 1.2
+const PLAYER_H := 1.0
 const HEAR_RANGE := 18.0
 const SUS_GAIN := 10.0
 const SUS_DECAY := 0.12
@@ -41,11 +43,12 @@ const ROAM_RADIUS := 9.0
 const WP_TH := 0.6
 const PAUSE_MIN := 0.12
 const PAUSE_MAX := 0.45
-const STRAFE_MAX := 0.5
-const STRAFE_T_MIN := 0.08
-const STRAFE_T_MAX := 0.24
-const STUCK_TIME := 0.1
-const CATCH_DIST := 1.2
+const STRAFE_MAX := 0.3
+const STRAFE_T_MIN := 0.15
+const STRAFE_T_MAX := 0.35
+const STUCK_TIME := 0.3
+const CATCH_DIST := 1.6
+const CATCH_GRACE := 1.2
 
 var alert: int = Alert.IDLE
 var facing: Vector3 = Vector3(0.0, 0.0, -1.0)
@@ -69,6 +72,10 @@ var _pend_ox := 0.0
 var _pend_oz := 0.0
 var _pend_sig := 0.0
 var _ap: AnimationPlayer
+var _catch_grace := 0.0
+var _eye_nodes: Dictionary = {}
+var _eye_mats: Dictionary = {}
+var _eye_key := ""
 
 @onready var _rig: Node3D = $Rig
 
@@ -81,6 +88,8 @@ func _ready() -> void:
 		if _ap.has_animation(a):
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("E_Anim_Patrol")
+	_cache_eye()
+	_update_eye(true)
 
 
 func get_alert() -> String:
@@ -102,6 +111,8 @@ func reset_droid() -> void:
 	_has_target = false
 	_pend = false
 	_cool = 0.0
+	_catch_grace = CATCH_GRACE
+	_update_eye(true)
 
 
 func _physics_process(delta: float) -> void:
@@ -124,13 +135,17 @@ func _physics_process(delta: float) -> void:
 		if _aggro_t <= 0.0:
 			alert = Alert.IDLE
 			_has_target = false
+	_catch_grace = maxf(0.0, _catch_grace - delta)
 	_update_speed_var(delta)
 	_update_move(delta)
-	if player != null and alert == Alert.SEEN:
+	if player != null and alert == Alert.SEEN and _catch_grace <= 0.0:
 		var d: Vector3 = player.global_position - global_position
-		if Vector2(d.x, d.z).length() < CATCH_DIST:
+		# Planar + Hoehe + Sichtlinie: kein Catch durch Waende/Etagen,
+		# sonst Teleport-Reset-Schleife (Bot poppt zum Spawn).
+		if Vector2(d.x, d.z).length() < CATCH_DIST and absf(d.y) < 2.0 and _has_los(player):
 			_caught(player)
 	_update_anim()
+	_update_eye()
 
 
 func _see_player(p: Node3D) -> bool:
@@ -141,11 +156,26 @@ func _see_player(p: Node3D) -> bool:
 		return false
 	if dist > 0.05 and facing.normalized().dot(to.normalized()) < VISION_DOT:
 		return false
-	var from: Vector3 = global_position + Vector3(0.0, 0.5, 0.0)
-	var dst: Vector3 = p.global_position + Vector3(0.0, 1.0, 0.0)
+	var from: Vector3 = global_position + Vector3(0.0, EYE_H, 0.0)
+	var dst: Vector3 = p.global_position + Vector3(0.0, PLAYER_H, 0.0)
 	var query := PhysicsRayQueryParameters3D.create(from, dst, 1, [get_rid(), (p as CollisionObject3D).get_rid()])
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
 	return hit.is_empty() or (hit["collider"] as Node) == p
+
+
+func _has_los(p: Node3D) -> bool:
+	# Reine Sichtlinie ohne Kegel/Distanz (fuer Catch): blockt Waende.
+	var from: Vector3 = global_position + Vector3(0.0, EYE_H, 0.0)
+	var dst: Vector3 = p.global_position + Vector3(0.0, PLAYER_H, 0.0)
+	if not (p is CollisionObject3D):
+		return false
+	var query := PhysicsRayQueryParameters3D.create(from, dst, 1, [get_rid(), (p as CollisionObject3D).get_rid()])
+	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	return hit.is_empty() or (hit["collider"] as Node) == p
+
+
+func get_marker_height() -> float:
+	return 3.0
 
 
 func _hearing(delta: float) -> void:
@@ -171,7 +201,7 @@ func _hearing(delta: float) -> void:
 		if player != null and player is CollisionObject3D:
 			excl.append((player as CollisionObject3D).get_rid())
 		var q := PhysicsRayQueryParameters3D.create(
-			global_position + Vector3(0.0, 0.5, 0.0), po + Vector3(0.0, 0.5, 0.0), 1, excl)
+			global_position + Vector3(0.0, EYE_H, 0.0), po + Vector3(0.0, 0.5, 0.0), 1, excl)
 		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
 			s *= OCCLUDE_DAMP
 		s *= randf_range(0.9, 1.1)
@@ -275,7 +305,8 @@ func _update_move(delta: float) -> void:
 			if alert == Alert.IDLE:
 				_pick_waypoint()
 			else:
-				_target = global_position + Vector3(-dir.z, 0.0, dir.x) * 2.0
+				# Vorwaerts-biased: kein hartes 90°-Umdrehen bei Mini-Haengern.
+				_target = global_position + dir * 3.0 + Vector3(-dir.z, 0.0, dir.x) * 1.5
 	else:
 		_stuck_t = 0.0
 
@@ -304,3 +335,58 @@ func _update_anim() -> void:
 		want = &"E_Anim_Patrol"
 	if _ap.current_animation != want:
 		_ap.play(want, 0.2)
+
+
+## Eye-/Beacon-Anzeige (Port aus dem 2D-Original, EnemyPalette):
+## Mesh nach Alert-State (ED_Eye_IDLE/HEARD/SEEN + Beacon-Trio),
+## Glow-Intensitaet nach Suspicion (smoothstep 0.05 -> 0.55 wie 2D),
+## SEEN pulsiert rot. Farben kommen aus den Blender-Materialien.
+const EYE_STATES := ["IDLE", "HEARD", "SEEN"]
+
+
+func _cache_eye() -> void:
+	for s in EYE_STATES:
+		for prefix in ["ED_Eye_", "ED_Beacon_"]:
+			var mi := _rig.find_child(prefix + s, true, false) as MeshInstance3D
+			if mi == null:
+				continue
+			_eye_nodes[prefix + s] = mi
+			var src := mi.get_active_material(0) as StandardMaterial3D
+			if src != null:
+				var dup := src.duplicate() as StandardMaterial3D
+				mi.set_surface_override_material(0, dup)
+				_eye_mats[prefix + s] = dup
+
+
+static func _sus_blend(s: float) -> float:
+	var t := clampf((s - 0.05) / 0.5, 0.0, 1.0)
+	return t * t * (3.0 - 2.0 * t)
+
+
+func _update_eye(force: bool = false) -> void:
+	var key := "IDLE"
+	if alert == Alert.SEEN:
+		key = "SEEN"
+	elif alert == Alert.HEARD:
+		key = "HEARD"
+	if not force and key == _eye_key:
+		_apply_eye_energy(key)
+		return
+	_eye_key = key
+	for s: String in EYE_STATES:
+		var on: bool = s == key
+		for prefix in ["ED_Eye_", "ED_Beacon_"]:
+			var n: String = prefix + s
+			if _eye_nodes.has(n):
+				(_eye_nodes[n] as MeshInstance3D).visible = on
+	_apply_eye_energy(key)
+
+
+func _apply_eye_energy(key: String) -> void:
+	var e := 5.0 + _sus_blend(suspicion) * 3.0
+	if key == "SEEN":
+		e += sin(Time.get_ticks_msec() * 0.012) * 1.5
+	for prefix in ["ED_Eye_", "ED_Beacon_"]:
+		var n: String = prefix + key
+		if _eye_mats.has(n):
+			(_eye_mats[n] as StandardMaterial3D).emission_energy_multiplier = e

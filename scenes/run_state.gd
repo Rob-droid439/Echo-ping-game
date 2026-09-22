@@ -11,6 +11,7 @@ const RADIUS_PER_POWERUP: float = 0.075
 const SPEED_PER_POWERUP: float = 0.15
 
 var ping_powerups: int = 0
+var start_msec: int = 0
 
 
 static func inst(tree: SceneTree):
@@ -18,6 +19,7 @@ static func inst(tree: SceneTree):
 	if rs == null:
 		rs = (load("res://scenes/run_state.gd") as GDScript).new()
 		rs.name = "RunState"
+		rs.set("start_msec", Time.get_ticks_msec())
 		tree.root.add_child(rs)
 	return rs
 
@@ -39,3 +41,10 @@ func speed_mult() -> float:
 
 func reset_run() -> void:
 	ping_powerups = 0
+	start_msec = Time.get_ticks_msec()
+
+
+func run_seconds() -> int:
+	if start_msec <= 0:
+		return 0
+	return int((Time.get_ticks_msec() - start_msec) / 1000)

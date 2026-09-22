@@ -12,8 +12,13 @@ func _ready() -> void:
 
 
 func _on_body_entered(body: Node3D) -> void:
-	if target_scene.is_empty():
+	if not body.is_in_group("player"):
 		return
-	if body.is_in_group("player"):
-		# Deferred: direkt im Physics-Callback crasht der Szenenwechsel.
-		get_tree().call_deferred("change_scene_to_file", target_scene)
+	if target_scene.is_empty():
+		# Level 2 hat kein Folge-Level: Victory-Menü statt nichts.
+		var menu: Node = get_tree().get_first_node_in_group("victory")
+		if menu != null and menu.has_method("show_victory"):
+			menu.show_victory()
+		return
+	# Deferred: direkt im Physics-Callback crasht der Szenenwechsel.
+	get_tree().call_deferred("change_scene_to_file", target_scene)
