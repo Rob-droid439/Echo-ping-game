@@ -24,11 +24,16 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
 - Ping powerups (port from 2D/Java `PowerUp.java` + `PingManager`): green diamonds, max 7 stacks run-wide (`run_state.gd`, survives scene change), each +7.5 % radius / +15 % speed. HUD shows `PING +n/7`.
   - Level 1: 3 pickups, Level 2: 3 pickups.
 - Droid AI (port from Java `EnemyAI` + `HearingModel` + `Enemy`, `scenes/droid_ai.gd` / `e_droid.tscn`):
-  - Patrol: random waypoints in 9 m roam radius + pause, speed 3.5 m/s with variance.
-  - Hearing: ping suspicion with latency (0.06–0.2 s), falloff², wavefront gaussian, 0.88 occlude damping, threshold 0.12 → `HEARD` with position uncertainty (1.5 m → 0.25 m by signal strength).
+  - Patrol: random waypoints in per-droid roam radius (`@export roam_radius`: L1 9 m open plaza, L2-A 4 m / L2-B 5 m tight slots) + pause, speed 3.5 m/s with variance.
+  - Waypoint validation (no navmesh, stage 1): ground ray below + free line-of-sight from bot, else re-roll (max 8 tries, then direction sampling). Rejects counted in debug stats.
+  - Wall feelers: 3 short raycasts (front/left/right, 2 m) steer the heading away instead of frontal wall-sliding; dead ends trigger sampling resolve.
+  - Stuck-resolve with direction sampling (3 candidates, freest wins) instead of fixed sidestep; `test_move` guard before moves (anti wall-clip); `STUCK_TIME` 0.3 s kept.
+  - Hearing: ping suspicion with latency (0.06–0.2 s), falloff², wavefront gaussian, 0.88 occlude damping, threshold 0.12 → `HEARD` with position uncertainty (1.5 m → 0.25 m by signal strength). `HEARD` targets are clamped to last free position before walls (no charging at walls that hid the ping).
   - Vision: 28° cone (`DOT 0.8829`), 9 m range, line-of-sight raycast → `SEEN` exact.
-  - Chase: `SEEN` exact / `HEARD` with scatter, strafe jitter, stuck-resolve.
-  - Catch-reset (prototype rule): touch in `SEEN` (<1.2 m) respawns player at spawn + resets all droids.
+  - Chase: `SEEN` exact / `HEARD` clamped with scatter, strafe jitter, sampling stuck-resolve.
+  - Catch-reset (prototype rule): touch in `SEEN` (<1.6 m + LOS + |dy| < 2 m, 1.2 s spawn grace) shows game-over menu, fallback respawn headless.
+  - Debug metrics: `get_debug_stats()` → stucks / waypoint_rejects / feeler_turns (`@export debug_log` prints resolves).
+  - Navmesh scaffold (stage 2, separate session): `NavigationAgent3D` child present, `@export use_navmesh` (default false = stage-1 fallback). Needs `NavigationRegion3D` bake from `-col` geometry, then per-droid opt-in.
   - Level 1: 1 droid, Level 2: 2 droids (`E_Droid_A/B`), all in `echo_receiver`.
 - Exit: `Area3D` at tunnel mouth → `change_scene_to_file` (L1 → L2).
 - HUD (`sonar_hud.tscn`): `SONAR [E]` cooldown bar, `KONTAKTE: n`, `PING +n/7`.
@@ -62,17 +67,27 @@ Naming in Blender drives the glTF import, no manual work in Godot:
   no display type) — hence mesh proxies.
 - No suffix = no collision (deco, lights, sensors).
 
-Export from `Cartograph 3D.blend` (selection per level collection) to
-`assets/maps/EchoCart_L1.glb` / `EchoCart_L2.glb`. L1 buildings walkable
-(hollow ground floor), L2 buildings backdrop (2 m slabs), ruins walkable.
+Export from `Cartograph 3D.blend` (selection per level collection, minus
+`L1_Volume` fog helper which must stay out) to `assets/maps/EchoCart_L1.glb` /
+`EchoCart_L2.glb`. L1 buildings walkable (hollow ground floor), L2 buildings
+backdrop (2 m slabs), ruins walkable.
+Layout pass 2026-09-24 (Blender-measured): L1 spawn→M1 corridor cleared —
+`BrokenSlab_0` cluster (24,-19)→(24,-23.5), `DebrisPile_0` (20,-20)→(18,-25),
+visual+`-colonly` proxy moved together (location offset, still aligned).
+L1 doors kept as deliberate chokepoints (M1 1.6 m / S1 1.9 m free, lintels
+2.6–2.7 m ≥ bot top 2.4 m); L2 needs no moves (0.19 m lamp poles are
+feeler-handled). Spawn distances already safe (L1 36 m, L2 25 m, rule ≥12 m);
+tight L2 slots fixed via small roam radii instead of moving spawns.
 
 ## Run / verify
 
 - Godot 4.7, Forward Plus, Jolt Physics, D3D12, MSAA 3D 2x. Open folder in editor and press Play (main scene L1).
 - Headless AI check:
-  `Godot_v4.7.2-stable_win64_console.exe --headless --path . -s res://tools/verify_droid.gd`
-  expects 9× `PASS` (`patrol bewegt/idle-alert/anim`, `hearing HEARD`,
-  `vision SEEN`, `catch respawn/versetzt/reset`, `l2 patrol`).
+  `Godot_v4.7.2-stable_win64_console.exe --headless --path . -s res://tools/verify_stufe1.gd`
+  expects 8× `PASS` + `RESULT: OK` (`patrol bewegt`, `stuck-resolves ≤ 3`,
+  `roam_radius` per droid, `hearing`, `vision SEEN`, `catch mit LOS`,
+  `l2 patrol`). Prints patrol metrics (stucks/rejects/feeler_turns) per level.
+  (Legacy `tools/verify_droid.gd` with 9× `PASS` superseded.)
 
 ## Development
 
@@ -83,7 +98,9 @@ Export from `Cartograph 3D.blend` (selection per level collection) to
 
 ## Known prototype limits
 
-- No navmesh: droids roam via waypoint + wall-slide, no pathfinding.
+- No navmesh yet (stage 1 active): droids roam via validated waypoints +
+  feeler steering + sampling resolve, no full pathfinding. `NavigationAgent3D`
+  scaffold + `use_navmesh` flag ready for stage-2 bake.
 - Catch = respawn, no game over, no menu, no audio.
 - L2 buildings have no interiors.
 

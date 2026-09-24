@@ -27,6 +27,7 @@ shape = SubResource("BoxShape3D_exit")
 
 [node name="E_Droid" parent="." unique_id=110288932 groups=["echo_receiver"] instance=ExtResource("4_btoec")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.319405, -3.8146973e-06, 5.456665)
+roam_radius = 9.0
 
 [node name="FX_SonarPing_Ring2" parent="." unique_id=1758745563 instance=ExtResource("5_gwceb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.415344, 0, 6.157593)

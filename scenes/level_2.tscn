@@ -32,9 +32,11 @@ environment = ExtResource("4")
 
 [node name="E_Droid_A" parent="." unique_id=849655691 groups=["echo_receiver"] instance=ExtResource("5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 68)
+roam_radius = 4.0
 
 [node name="E_Droid_B" parent="." unique_id=1054124920 groups=["echo_receiver"] instance=ExtResource("5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 70)
+roam_radius = 5.0
 
 [node name="SonarHUD" parent="." unique_id=1269449311 instance=ExtResource("6")]
 
