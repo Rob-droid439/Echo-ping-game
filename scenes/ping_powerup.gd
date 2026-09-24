@@ -4,6 +4,8 @@ extends Area3D
 ## danach verschwindet das Pickup. Schwebt und rotiert als Signal.
 
 const RS := preload("res://scenes/run_state.gd")
+const SFXH := preload("res://scenes/sfx.gd")
+const SFX_PICKUP: AudioStream = preload("res://assets/audio/Ping_Powerup_Pickup.wav")
 
 var _t: float = 0.0
 
@@ -26,4 +28,6 @@ func _collect(body: Node3D) -> void:
 	if body.is_in_group("player"):
 		var rs = RS.inst(get_tree())
 		rs.add_powerup()
+		# One-Shot an der Szene: Pickup ist nach queue_free() schon weg.
+		SFXH.play(get_tree(), SFX_PICKUP)
 		queue_free()

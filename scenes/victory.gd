@@ -7,6 +7,9 @@ extends CanvasLayer
 
 const MS := preload("res://scenes/menu_style.gd")
 const RS := preload("res://scenes/run_state.gd")
+const SFX_WON: AudioStream = preload("res://assets/audio/GameWon.wav")
+
+var _sfx: AudioStreamPlayer
 
 @onready var _panel: PanelContainer = $Center/Panel
 @onready var _title: Label = $Center/Panel/Margin/VBox/Title
@@ -27,11 +30,15 @@ func _ready() -> void:
 	MS.style_button(_replay, false)
 	_restart.pressed.connect(_on_restart)
 	_replay.pressed.connect(_on_replay)
+	_sfx = AudioStreamPlayer.new()
+	_sfx.stream = SFX_WON
+	add_child(_sfx)
 
 
 func show_victory() -> void:
 	if visible:
 		return
+	_sfx.play()
 	var secs := 0
 	var powers := 0
 	var rs = RS.inst(get_tree())

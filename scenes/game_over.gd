@@ -6,6 +6,9 @@ extends CanvasLayer
 ## Look via menu_style.gd (geteilt mit Victory-Menü).
 
 const MS := preload("res://scenes/menu_style.gd")
+const SFX_OVER: AudioStream = preload("res://assets/audio/GameOver.wav")
+
+var _sfx: AudioStreamPlayer
 
 @onready var _panel: PanelContainer = $Center/Panel
 @onready var _title: Label = $Center/Panel/Margin/VBox/Title
@@ -24,6 +27,9 @@ func _ready() -> void:
 	MS.style_button(_reload, false)
 	_retry.pressed.connect(_on_retry)
 	_reload.pressed.connect(_on_reload)
+	_sfx = AudioStreamPlayer.new()
+	_sfx.stream = SFX_OVER
+	add_child(_sfx)
 
 
 func play_catch_animation() -> void:
@@ -35,6 +41,7 @@ func play_catch_animation() -> void:
 func show_game_over() -> void:
 	if visible:
 		return
+	_sfx.play()
 	visible = true
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

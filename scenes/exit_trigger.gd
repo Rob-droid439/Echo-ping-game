@@ -6,6 +6,9 @@
 
 @export_file("*.tscn") var target_scene: String = ""
 
+const SFXH := preload("res://scenes/sfx.gd")
+const SFX_EXIT: AudioStream = preload("res://assets/audio/LevelTransition.wav")
+
 
 func _ready() -> void:
 	body_entered.connect(_on_body_entered)
@@ -20,5 +23,8 @@ func _on_body_entered(body: Node3D) -> void:
 		if menu != null and menu.has_method("show_victory"):
 			menu.show_victory()
 		return
+	# One-Shot am Root: überlebt den Szenenwechsel (Victory-Pfad spielt
+	# stattdessen GameWon uebers Menü — kein Doppel-Sound).
+	SFXH.play(get_tree(), SFX_EXIT, true)
 	# Deferred: direkt im Physics-Callback crasht der Szenenwechsel.
 	get_tree().call_deferred("change_scene_to_file", target_scene)

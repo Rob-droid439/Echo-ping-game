@@ -20,11 +20,15 @@ const PING_SCENE: PackedScene = preload("res://scenes/sonar_ping.tscn")
 const RS: GDScript = preload("res://scenes/run_state.gd")
 const BASE_PING_RMAX: float = 25.0
 const BASE_PING_SPEED: float = 15.625
+const SFX_PING: AudioStream = preload("res://assets/audio/Ping.wav")
+const SFX_DENIED: AudioStream = preload("res://assets/audio/PingNotReady.wav")
 
 @onready var _rig: Node3D = $Rig
 @onready var _arm: SpringArm3D = $CamArm
 @onready var _cam: Camera3D = $CamArm/Camera3D
 var _ap: AnimationPlayer
+var _sfx_ping: AudioStreamPlayer
+var _sfx_denied: AudioStreamPlayer
 var _pitch: float = -0.18
 var _ping_left: float = 0.0
 var _ping_anim: float = 0.0
@@ -55,6 +59,12 @@ func _ready() -> void:
 	_ap.play("D_Anim_Idle")
 	_arm.spring_length = cam_arm_length
 	_arm.rotation.x = _pitch
+	_sfx_ping = AudioStreamPlayer.new()
+	_sfx_ping.stream = SFX_PING
+	add_child(_sfx_ping)
+	_sfx_denied = AudioStreamPlayer.new()
+	_sfx_denied.stream = SFX_DENIED
+	add_child(_sfx_denied)
 
 
 func _exclude_actors() -> void:
@@ -99,7 +109,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func cast_ping() -> bool:
 	if not try_ping():
+		_sfx_denied.play()
 		return false
+	_sfx_ping.play()
 	if _ap.has_animation("D_Anim_PingCast"):
 		_ap.play("D_Anim_PingCast", 0.1)
 		_ping_anim = _ap.get_animation("D_Anim_PingCast").length

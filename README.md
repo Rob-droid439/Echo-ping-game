@@ -55,6 +55,7 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
 - `scenes/sonar_hud.tscn`, `ping_marker.gd`, `exit_trigger.gd`, `night_env.tres`
 - `assets/maps/`: `EchoCart_L1.glb`, `EchoCart_L2.glb`, `D_Protagonist.glb`, `E_Droid.glb`, `FX_SonarPing_Ring.glb`
 - `assets/sky/echo_night.hdr` — night env
+- `assets/audio/` — SFX aus dem 2D-Original (wav, LFS), Helper `scenes/sfx.gd`
 - `tools/` — git-ignored headless verifiers (`verify_droid.gd`: patrol/hearing/vision/catch/L2)
 
 ## Collision (Blender → Godot)
@@ -103,8 +104,11 @@ tight L2 slots fixed via small roam radii instead of moving spawns.
 - Navmesh baked (stage 2): CHASE/HEARD pathfind around walls and through
   1.6 m doors; patrol stays waypoint-based by design. Stairs/upper floors
   are in the mesh — chase up steps can grind (stuck-resolve catches it).
-  Catch = menu + respawn rules, no full game-over flow, no audio.
-- Catch = respawn, no game over, no menu, no audio.
+  Catch = menu + respawn rules, no full game-over flow.
+- Audio (2D-Original, `assets/audio/`): Ping / PingNotReady (Cooldown) /
+  Pickup / AlertYellow-Red (HEARD/SEEN, positional) / GameOver / GameWon /
+  LevelTransition. Kein Startmenü → keine Menümusik; Lautstärke noch
+  ungetunt (Playtest).
 - L2 buildings have no interiors.
 
 Tech:

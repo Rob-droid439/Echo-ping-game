@@ -56,6 +56,8 @@ const CLEAR_LEN := 4.0
 const WP_TRIES := 8
 const GROUND_DROP := 3.0
 const GROUND_BAND := 1.5
+const SFX_YELLOW: AudioStream = preload("res://assets/audio/EnemyAlertYellow.wav")
+const SFX_RED: AudioStream = preload("res://assets/audio/EnemyAlertRed.wav")
 
 ## Patrol-Radius pro Droid (Blender-Vermessung 2026-09-24):
 ## offene Plaetze (L1-Plaza ~90 % frei) 9 m, enge Slots (L2 Blockriegel) 4-5 m.
@@ -89,6 +91,7 @@ var _pend_ox := 0.0
 var _pend_oz := 0.0
 var _pend_sig := 0.0
 var _ap: AnimationPlayer
+var _sfx_alert: AudioStreamPlayer3D
 var _catch_grace := 0.0
 var _nav_agent: NavigationAgent3D
 var _dbg_rejects := 0
@@ -110,6 +113,9 @@ func _ready() -> void:
 		if _ap.has_animation(a):
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("E_Anim_Patrol")
+	_sfx_alert = AudioStreamPlayer3D.new()
+	_sfx_alert.max_distance = 40.0
+	add_child(_sfx_alert)
 	_nav_agent = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
 	_cache_eye()
 	_update_eye(true)
@@ -266,6 +272,13 @@ func _hearing(delta: float) -> void:
 
 
 func _set_aggro(target: Vector3, dur: float, seen: bool) -> void:
+	# Alert-Sting nur bei Flankenwechsel (2D-Original: Yellow=gehört, Rot=gesehen).
+	if seen and alert != Alert.SEEN:
+		_sfx_alert.stream = SFX_RED
+		_sfx_alert.play()
+	elif not seen and alert == Alert.IDLE:
+		_sfx_alert.stream = SFX_YELLOW
+		_sfx_alert.play()
 	alert = Alert.SEEN if seen else Alert.HEARD
 	_aggro_t = dur * randf_range(0.85, 1.25)
 	var t := Vector3(target.x, _spawn.y, target.z)
