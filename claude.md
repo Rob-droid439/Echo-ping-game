@@ -1,6 +1,14 @@
 Context for agents:
 ----
 Architecture:
+- Remake: Das Spiel existiert bereits als fertiges Java-2D-Original und wird
+  hier verbessert + nach 3D portiert. Original (NICHT im Repo):
+  `D:\Dev\IT Projekt RobertSchmauz Cartograph\` — Java-Quellcode als
+  Gameplay-Referenz (EnemyAI, HearingModel, PowerUp-/PingManager-Verhalten),
+  Sounds direkt wiederverwenden aus `src/assets/SFX/` (Ping, PingNotReady,
+  Ping_Powerup_Pickup, EnemyAlertYellow/Red, GameOver, GameWon,
+  LevelTransition, Walking_Idle) + `src/assets/Musik/` (MenuAmbiente).
+  Zielpfad im Repo: `assets/audio/` (wav → LFS, s. `.gitattributes`).
 - Godot 4.7 (Forward Plus, Jolt Physics, D3D12) + Blender 5.2 (`Cartograph 3D.blend`
   liegt NICHT im Repo, sondern auf dem Desktop). Main scenes `scenes/level_1|2.tscn`.
 - Gameplay scripts (`scenes/`): `player.gd` (Third-Person + SpringArm + `E`-Ping),
