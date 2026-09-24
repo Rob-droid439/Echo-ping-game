@@ -16,7 +16,7 @@ const SVAR_INT_MIN := 0.2
 const SVAR_INT_MAX := 0.65
 const VISION_RANGE := 9.0
 const VISION_DOT := 0.8829
-const EYE_H := 1.2
+const EYE_H := 1.1
 const PLAYER_H := 1.0
 const HEAR_RANGE := 18.0
 const SUS_GAIN := 10.0
@@ -206,7 +206,7 @@ func _has_los(p: Node3D) -> bool:
 
 
 func get_marker_height() -> float:
-	return 3.0
+	return 2.75
 
 
 func _hearing(delta: float) -> void:
@@ -282,11 +282,11 @@ func _set_aggro(target: Vector3, dur: float, seen: bool) -> void:
 	alert = Alert.SEEN if seen else Alert.HEARD
 	_aggro_t = dur * randf_range(0.85, 1.25)
 	var t := Vector3(target.x, _spawn.y, target.z)
-	if not seen:
-		# HEARD: nie gegen die Wand rennen, hinter der es gehoert wurde —
-		# Ziel auf letzte freie Position vor dem Hindernis klemmen.
+	if not seen and not _nav_usable():
+		# Nur ohne Navmesh klemmen: mit Pfad darf das Ziel hinter der Wand
+		# liegen (Agent routet durch Tueren); Klemmen wuerde ihn draussen
+		# stranden lassen. SEEN braucht nie Klemmen (Sichtlinie belegt).
 		t = _clamp_target_to_los(t)
-	# SEEN braucht kein Klemmen: Sichtlinie ist per _see_player belegt.
 	_target = t
 	_has_target = true
 	_pause_t = 0.0
@@ -430,8 +430,10 @@ func _update_move(delta: float) -> void:
 		move_and_slide()
 		return
 	# Anti-Glitch-Gelaender: Kollision vorab testen (test_move = true heisst
-	# BLOCKIERT); bei Wandkontakt Sampling-Resolve statt Clip.
-	if test_move(global_transform, dir * 0.6):
+	# BLOCKIERT). Doppel-Bestaetigung mit Front-Fuehler: test_move meldet an
+	# Tuerkanten auch Margin-Kontakt, wo die Bahn frei ist — ohne Fuehler-
+	# Bestaetigung wuerde der Bot ewig vor der offenen Tuer resolven.
+	if test_move(global_transform, dir * 0.6) and _feeler_blocked(dir, 0.0, FEELER_LEN):
 		_resolve_stuck(dir)
 		return
 	var spd: float = PATROL_SPEED * _svar_mult
@@ -449,8 +451,12 @@ func _update_move(delta: float) -> void:
 		_stuck_t = 0.0
 
 
+func _nav_usable() -> bool:
+	return use_navmesh and _nav_agent != null
+
+
 func _nav_active() -> bool:
-	return use_navmesh and _nav_agent != null and alert != Alert.IDLE and _has_target
+	return _nav_usable() and alert != Alert.IDLE and _has_target
 
 
 func _push_nav_target() -> void:

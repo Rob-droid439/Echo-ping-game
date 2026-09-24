@@ -15,8 +15,9 @@ Architecture:
   `droid_ai.gd` (Enemy-KI), `sonar_ping.gd` (`active_ping`), `ping_powerup.gd` +
   `run_state.gd` (max 7 Stacks, szenenübergreifend), `exit_trigger.gd`,
   `game_over.gd` / `victory.gd` (pausieren den Tree!), `sonar_hud.gd`, `menu_style.gd`.
-- Droid-KI: Patrol = validierte Zufalls-Wegpunkte (`@export roam_radius`: L1 9 m,
-  L2-A 4 m, L2-B 5 m) + 3 Wand-Fühler + Sampling-Stuck-Resolve; CHASE/HEARD =
+- Droid-KI: Bot-Kapsel r0,45/h2,16 (~10 % slim), Patrol = validierte
+  Zufalls-Wegpunkte (`@export roam_radius`: L1 9 m, L2-A 4 m, L2-B 5 m)
+  + 3 Wand-Fühler + Sampling-Stuck-Resolve; CHASE/HEARD =
   Navmesh-Pfad (`use_navmesh`, `get_next_path_position()`); Catch nur mit LOS +
   |dy| < 2 m + 1,2 s Grace. Debug via `get_debug_stats()` (stucks/rejects/
   feeler_turns/nav_steps). Gameplay-Details: README.
@@ -26,7 +27,8 @@ Architecture:
   Rest = Deko ohne Kollision. `level_*.tscn` sind ~3 KB klein — alles Schwere
   steckt in GLB + `assets/nav/*.tres`.
 - Navmesh: `NavigationRegion3D` pro Level + `assets/nav/L1|L2_navmesh.tres`
-  (Agent H 2,4 / R 0,6 / Climb 0,3). Bake NUR headless:
+  (Agent H 2,2 / Bake-R 0,3 bei Bot-R 0,45 / Climb 0,3 — Recast rundet
+  Radius auf ganze Voxel AUF, R0,45 (= 2 Voxel) versiegelt Tueren!). Bake NUR headless:
   `tools/bake_navmesh.gd -- <level.tscn> <MapNode> <out.tres>`.
 - `tools/` ist git-ignored (Verifier: `verify_stufe1.gd` erwartet 12× PASS +
   `RESULT: OK`; `bake_navmesh.gd`). Doku dazu in README. LFS: `*.glb/*.hdr/
@@ -49,6 +51,11 @@ Architecture:
  verbaut = ewiger Freeze (Bot bremst in Pause-Schleife, Metrik zeigt
  ~66 stucks/1200 Frames bei meanspeed 0). Bei Bewegungs-Bugs zuerst
  `get_debug_stats()` + Positionen samplen, dann Thesen testen.
+-HEARD-Klemmung (`_clamp_target_to_los`) nur OHNE Navmesh — mit Pfad strandete
+ sie den Bot draussen statt durch die Tuer. test_move-Guard nur mit
+ Front-Fuehler-Doppelbestaetigung (Margin-Kontakt an Tuerkanten einseitig
+ = 441 Resolves/Sekunde vor offener Tuer). Tuer-Proof: `diag_door`-Muster
+ (Bot davor, Spieler drin, Ping → dist < 2,5 m).
 -`game_over.gd` / `victory` pausieren den Tree (`paused = true`) — Headless-
  Verifier, die danach weiterlaufen, sehen eingefrorene Nodes. Nach Catch-Tests
  `paused = false` setzen.

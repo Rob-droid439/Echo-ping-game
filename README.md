@@ -75,9 +75,14 @@ backdrop (2 m slabs), ruins walkable.
 Layout pass 2026-09-24 (Blender-measured): L1 spawn→M1 corridor cleared —
 `BrokenSlab_0` cluster (24,-19)→(24,-23.5), `DebrisPile_0` (20,-20)→(18,-25),
 visual+`-colonly` proxy moved together (location offset, still aligned).
-L1 doors kept as deliberate chokepoints (M1 1.6 m / S1 1.9 m free, lintels
-2.6–2.7 m ≥ bot top 2.4 m); L2 needs no moves (0.19 m lamp poles are
-feeler-handled). Spawn distances already safe (L1 36 m, L2 25 m, rule ≥12 m);
+Droid slimmed ~10 % (capsule r0.45/h2.16, rig 1.62, eye 1.1, marker 2.75).
+Passage pass same day: all 8 L1 doors 1.8→2.6 m (sides ±0.4, lintel/step
+scaled, leaves parked clear), exits 2.4/2.0→3.2/2.8 m; curbs' proxies
+deleted, steps/sills/cables decollided (visuals kept), all walking plates
+lowered to 0.02 (no more curb/step lip-blocks for CharacterBodies without
+step-up). Navmesh rebaked R0.3 (voxel math: R0.45 seals doors, s. claude.md).
+Door chase proven end-to-end (M1 door test: SEEN through door, 0 stucks).
+Spawn distances already safe (L1 36 m, L2 25 m, rule ≥12 m);
 tight L2 slots fixed via small roam radii instead of moving spawns.
 
 ## Run / verify
