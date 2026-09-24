@@ -19,8 +19,9 @@ shape = SubResource("cap")
 transform = Transform3D(1.8, 0, 0, 0, 1.8, 0, 0, 0, 1.8, -1.7, 0, 0)
 
 [node name="NavigationAgent3D" type="NavigationAgent3D" parent="." unique_id=2112024317]
-; Stufe-2-Scaffold (inaktiv solange use_navmesh=false in droid_ai.gd):
-; braucht NavigationRegion3D-Bake aus der -col-Geometrie, dann pro Droid
-; use_navmesh=true. Fallback = Stufe-1-Verhalten (Validierung + Fuehler).
+; Stufe 2 (aktiv bei use_navmesh=true): Masse passend zu Bake
+; (Agent-H 2.4 / R 0.6) und Kapsel (r0,5/h2,4).
+radius = 0.5
+height = 2.4
 max_speed = 5.0
 path_height_offset = 1.0

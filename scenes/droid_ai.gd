@@ -60,8 +60,9 @@ const GROUND_BAND := 1.5
 ## Patrol-Radius pro Droid (Blender-Vermessung 2026-09-24):
 ## offene Plaetze (L1-Plaza ~90 % frei) 9 m, enge Slots (L2 Blockriegel) 4-5 m.
 @export var roam_radius := 9.0
-## Stufe-2-Schalter (eigene Session): mit NavigationRegion3D gebacken + Agent
-## als Kindknoten vorhanden -> CHASE/HEARD per Pfad, sonst altes Verhalten.
+## Stufe 2: Navmesh aus `-col`-Geometrie gebacken (assets/nav/*.tres) +
+## NavigationAgent3D als Kindknoten -> CHASE/HEARD per Pfad, sonst
+## Stufe-1-Fallback (Validierung + Fuehler). Patrol bleibt immer Waypoint.
 @export var use_navmesh := false
 ## Debug-Metrik fuer Playtests (Stuck-Counter + Waypoint-Rejects).
 @export var debug_log := false
@@ -93,6 +94,7 @@ var _nav_agent: NavigationAgent3D
 var _dbg_rejects := 0
 var _dbg_stucks := 0
 var _dbg_feeler_turns := 0
+var _dbg_nav_steps := 0
 var _eye_nodes: Dictionary = {}
 var _eye_mats: Dictionary = {}
 var _eye_key := ""
@@ -133,6 +135,8 @@ func reset_droid() -> void:
 	_pend = false
 	_cool = 0.0
 	_catch_grace = CATCH_GRACE
+	if _nav_agent != null:
+		_nav_agent.target_position = _spawn
 	_update_eye(true)
 
 
@@ -302,6 +306,7 @@ func get_debug_stats() -> Dictionary:
 		"stucks": _dbg_stucks,
 		"waypoint_rejects": _dbg_rejects,
 		"feeler_turns": _dbg_feeler_turns,
+		"nav_steps": _dbg_nav_steps,
 		"alert": get_alert(),
 	}
 
@@ -390,12 +395,19 @@ func _update_move(delta: float) -> void:
 		return
 	var dir: Vector3 = to.normalized()
 	# Stufe 2 (opt-in): Pfadposition statt Luftlinie, Fallback unten.
+	# Patrol bleibt absichtlich Waypoint (billig, organisch) — _nav_active
+	# gilt nur fuer HEARD/SEEN.
 	if _nav_active():
+		if _nav_agent.is_navigation_finished():
+			# Pfadende erreicht, Ziel aber noch da (HEARD-Streu): frisch
+			# anfordern statt auf der Stelle zu treten.
+			_nav_agent.target_position = _target
 		var next: Vector3 = _nav_agent.get_next_path_position()
 		var nt: Vector3 = next - global_position
 		nt.y = 0.0
 		if nt.length() > 0.2:
 			dir = nt.normalized()
+			_dbg_nav_steps += 1
 	# Wand-Fuehler: blockierte Richtung wegdrehen statt frontal wall-sliden.
 	dir = _steer_feelers(dir)
 	if dir.length() < 0.01:

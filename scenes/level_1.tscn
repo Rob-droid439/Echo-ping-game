@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://scenes/sonar_hud.tscn" id="8"]
 [ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="9_e3sih"]
+[ext_resource type="NavigationMesh" path="res://assets/nav/L1_navmesh.tres" id="10_nav"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -28,6 +29,7 @@ shape = SubResource("BoxShape3D_exit")
 [node name="E_Droid" parent="." unique_id=110288932 groups=["echo_receiver"] instance=ExtResource("4_btoec")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45.319405, -3.8146973e-06, 5.456665)
 roam_radius = 9.0
+use_navmesh = true
 
 [node name="FX_SonarPing_Ring2" parent="." unique_id=1758745563 instance=ExtResource("5_gwceb")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 46.415344, 0, 6.157593)
@@ -50,3 +52,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0.6, 30)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.6, 10.5)
 
 [node name="GameOver" parent="." unique_id=670060797 instance=ExtResource("9_e3sih")]
+
+[node name="NavRegion" type="NavigationRegion3D" parent="." unique_id=3141592653]
+; Stufe 2: Mesh headless gebacken (tools/bake_navmesh.gd) aus allen
+; 286 -col-StaticBodies, Agent H2.4/R0.6/Climb0.3. Nie via Editor
+; speichern (blaht sonst GLB-Instanzen in die .tscn auf).
+navigation_mesh = ExtResource("10_nav")

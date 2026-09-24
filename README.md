@@ -33,7 +33,8 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
   - Chase: `SEEN` exact / `HEARD` clamped with scatter, strafe jitter, sampling stuck-resolve.
   - Catch-reset (prototype rule): touch in `SEEN` (<1.6 m + LOS + |dy| < 2 m, 1.2 s spawn grace) shows game-over menu, fallback respawn headless.
   - Debug metrics: `get_debug_stats()` → stucks / waypoint_rejects / feeler_turns (`@export debug_log` prints resolves).
-  - Navmesh scaffold (stage 2, separate session): `NavigationAgent3D` child present, `@export use_navmesh` (default false = stage-1 fallback). Needs `NavigationRegion3D` bake from `-col` geometry, then per-droid opt-in.
+  - Navmesh (stage 2, active): `NavigationRegion3D` per level with headless-baked mesh (`assets/nav/L1_navmesh.tres` 365 polys from 286 `-col` bodies, `L2_navmesh.tres` 434 polys from 145; `tools/bake_navmesh.gd`, agent H 2.4 / R 0.6 / climb 0.3). `NavigationAgent3D` child (r 0.5 / h 2.4) drives CHASE/HEARD via `get_next_path_position()` (`use_navmesh = true` on all droids); patrol stays waypoint (`nav_steps` metric proves the split). Fallback = stage-1 behavior.
+  - NEVER save level scenes from the editor: unpacking GLB instances bloats the `.tscn` by +20–34k lines and breaks node paths. Scene edits = text edits on closed tabs only; navmesh bakes headless.
   - Level 1: 1 droid, Level 2: 2 droids (`E_Droid_A/B`), all in `echo_receiver`.
 - Exit: `Area3D` at tunnel mouth → `change_scene_to_file` (L1 → L2).
 - HUD (`sonar_hud.tscn`): `SONAR [E]` cooldown bar, `KONTAKTE: n`, `PING +n/7`.
@@ -84,9 +85,11 @@ tight L2 slots fixed via small roam radii instead of moving spawns.
 - Godot 4.7, Forward Plus, Jolt Physics, D3D12, MSAA 3D 2x. Open folder in editor and press Play (main scene L1).
 - Headless AI check:
   `Godot_v4.7.2-stable_win64_console.exe --headless --path . -s res://tools/verify_stufe1.gd`
-  expects 8× `PASS` + `RESULT: OK` (`patrol bewegt`, `stuck-resolves ≤ 3`,
-  `roam_radius` per droid, `hearing`, `vision SEEN`, `catch mit LOS`,
-  `l2 patrol`). Prints patrol metrics (stucks/rejects/feeler_turns) per level.
+  expects 12× `PASS` + `RESULT: OK` (`patrol bewegt`, `stuck-resolves ≤ 3`,
+  `patrol ohne Navmesh`, `roam_radius` per droid, `hearing`, `chase nutzt
+  Navmesh-Pfad`, `vision SEEN`, `catch mit LOS`, `l2 patrol`,
+  `l2 hearing`, `l2 chase nutzt Navmesh`). Prints patrol metrics
+  (stucks/rejects/feeler_turns/nav_steps) per level.
   (Legacy `tools/verify_droid.gd` with 9× `PASS` superseded.)
 
 ## Development
@@ -98,9 +101,10 @@ tight L2 slots fixed via small roam radii instead of moving spawns.
 
 ## Known prototype limits
 
-- No navmesh yet (stage 1 active): droids roam via validated waypoints +
-  feeler steering + sampling resolve, no full pathfinding. `NavigationAgent3D`
-  scaffold + `use_navmesh` flag ready for stage-2 bake.
+- Navmesh baked (stage 2): CHASE/HEARD pathfind around walls and through
+  1.6 m doors; patrol stays waypoint-based by design. Stairs/upper floors
+  are in the mesh — chase up steps can grind (stuck-resolve catches it).
+  Catch = menu + respawn rules, no full game-over flow, no audio.
 - Catch = respawn, no game over, no menu, no audio.
 - L2 buildings have no interiors.
 
