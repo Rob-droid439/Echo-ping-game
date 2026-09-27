@@ -99,9 +99,13 @@ Droid-Spawns: L1-Plaza 9-m-Roam mit nur Ground <3 m, L2-Slots 4/5 m mit
   expects 13× `PASS` + `RESULT: OK` (`patrol bewegt`, `stuck-resolves ≤ 3`,
   `patrol ohne Navmesh`, `roam_radius` per droid, `hearing`, `chase nutzt
   Navmesh-Pfad`, `vision SEEN`, `catch mit LOS`, `l2 patrol`,
-  `l2 hearing`, `l2 chase nutzt Navmesh`). Prints patrol metrics
-  (stucks/rejects/feeler_turns/nav_steps) per level.
-  (Legacy `tools/verify_droid.gd` with 9× `PASS` superseded.)
+   `l2 hearing`, `l2 chase nutzt Navmesh`). Prints patrol metrics
+   (stucks/rejects/feeler_turns/nav_steps) per level.
+   (Legacy `tools/verify_droid.gd` with 9× `PASS` superseded.)
+- Door + catch regression:
+  `Godot_v4.7.2-stable_win64_console.exe --headless --path . -s res://tests/regression_m1_door.gd`
+  expects 5× `PASS` + `RESULT: OK` (M1-Tür-Chase per Navmesh mit 0 stucks,
+  kein Catch durch die Wand).
 
 ## Development
 
