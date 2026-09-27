@@ -1,6 +1,6 @@
 # Plan: Level-Design (Blender) + Enemy-KI — nächste Session
 
-Stand: 2026-09-23. Kontext: Commits bis `4f4d99a` (Endmenü + Alert-State).
+Stand: 2026-09-23, umgesetzt 2026-09-27 (s. §7). Kontext: Commits bis `4f4d99a` (Endmenü + Alert-State).
 
 ## 0. Ausgangslage
 
@@ -91,3 +91,26 @@ Ziel: Wandkontakt nur noch als Ausnahme, kein Durch-Wand-Glitchen.
 - Alle Durchgänge ≥ 2,5 m frei vermessen; Content steht an Rändern.
 - Catch nur mit Sichtlinie (Regressionstest: durch Wand kein Menü).
 - L1 + L2 je einmal durchgespielt (Ping, Powerups, Exit/Victory).
+
+## 7. Umsetzung 2026-09-27 (Session-Ergebnis)
+
+- §1 Vermessung (Blender, `Cartograph 3D.blend`): 7/8 L1-Türen 2,60 m frei,
+  M1 2,43 m; S1-Öffnung 2,70 m; Exits 3,2/2,8 m, Tunnel 3,0 m; Lintel-UK
+  ≥2,60 m (Bot-Top 2,16 m); Transit ±1,5 m um alle Türmitten frei (0 Props);
+  Spawns L1 36 m / L2-A 25 m auseinander, Droid-Roam L1 9 m offen,
+  L2 4/5 m enge Slots.
+- §2 Layout-Pass: einziger Eingriff M1 FrameR +0,1 / Lintel +0,05 → 2,53 m
+  (je 4 cm Überlapp, `-col`-Meshes = Visual+Kollision gemeinsam verschoben),
+  `.blend` gespeichert, `EchoCart_L1.glb` re-exportiert (ohne `L1_Volume`,
+  +80 Bytes), Navmesh rebaked = byte-identisch (10-cm-Änderung sub-Voxel,
+  Tür war und bleibt passierbar).
+- §3 Stufe 1: bereits im Code (`droid_ai.gd`: `@export roam_radius`,
+  `_is_waypoint_valid` mit 8 Versuchen, 3 Fühler, Sampling-Resolve,
+  `_clamp_target_to_los`, `test_move`-Guard, LOS-Catch, `get_debug_stats`).
+- §4 Stufe 2: bereits aktiv (`use_navmesh=true` alle Droids, `L1/L2_navmesh`,
+  `NavigationAgent3D`, Patrol = Waypoint per Design).
+- §5/§6 Abnahme: `verify_stufe1` 13× PASS + RESULT OK (L1 1 stuck/20 s,
+  L2-A 2/10 s); neu `tests/regression_m1_door.gd` 5× PASS
+  (M1-Chase 0 stucks/67 nav_steps/SEEN, kein Catch durch Wand).
+  Offene Restrisiken: 60-s-Null-Stuck-Kriterium (§6) ist aspirativ —
+  Resolve ist Design-Mechanik, Schwellwert bleibt ≤3/20 s.
