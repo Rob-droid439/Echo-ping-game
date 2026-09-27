@@ -84,6 +84,12 @@ step-up). Navmesh rebaked R0.3 (voxel math: R0.45 seals doors, s. claude.md).
 Door chase proven end-to-end (M1 door test: SEEN through door, 0 stucks).
 Spawn distances already safe (L1 36 m, L2 25 m, rule ≥12 m);
 tight L2 slots fixed via small roam radii instead of moving spawns.
+Vermessung 2026-09-27 (Blender, Weltkoordinaten): 7/8 L1-Türen 2,60 m frei,
+M1 nur 2,43 m → FrameR +0,1 / Lintel +0,05 = 2,53 m (Lintel-Überlapp je 4 cm,
+UK 2,60 m ≥ Bot-Top 2,16 m); S1-Öffnung 2,70 m (Torblatt seitlich geparkt);
+Exits 3,2/2,8 m, Tunnel 3,0 m; Transit-Probs 0 (alle Türmitten ±1,5 m frei);
+Droid-Spawns: L1-Plaza 9-m-Roam mit nur Ground <3 m, L2-Slots 4/5 m mit
+7/9 Bodies im Roam (Validator + Fühler fangen das, Verifier grün).
 
 ## Run / verify
 
