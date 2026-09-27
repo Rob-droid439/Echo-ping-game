@@ -33,7 +33,7 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
   - Chase: `SEEN` exact / `HEARD` clamped with scatter, strafe jitter, sampling stuck-resolve.
   - Catch-reset (prototype rule): touch in `SEEN` (<1.6 m + LOS + |dy| < 2 m, 1.2 s spawn grace) shows game-over menu, fallback respawn headless.
   - Debug metrics: `get_debug_stats()` → stucks / waypoint_rejects / feeler_turns (`@export debug_log` prints resolves).
-  - Navmesh (stage 2, active): `NavigationRegion3D` per level with headless-baked mesh (`assets/nav/L1_navmesh.tres` 365 polys from 286 `-col` bodies, `L2_navmesh.tres` 434 polys from 145; `tools/bake_navmesh.gd`, agent H 2.4 / R 0.6 / climb 0.3). `NavigationAgent3D` child (r 0.5 / h 2.4) drives CHASE/HEARD via `get_next_path_position()` (`use_navmesh = true` on all droids); patrol stays waypoint (`nav_steps` metric proves the split). Fallback = stage-1 behavior. Agent workflow rules: `claude.md`.
+     - Navmesh (stage 2, active): `NavigationRegion3D` per level with headless-baked mesh (`assets/nav/L1_navmesh.tres` 627 polys from 275 `-col` bodies, `L2_navmesh.tres` 434 polys from 145; `tools/bake_navmesh.gd`, agent H 2.4 / R 0.6 / climb 0.3). `NavigationAgent3D` child (r 0.5 / h 2.4) drives CHASE/HEARD via `get_next_path_position()` (`use_navmesh = true` on all droids); patrol stays waypoint (`nav_steps` metric proves the split). Fallback = stage-1 behavior. Agent workflow rules: `claude.md`.
   - Level 1: 1 droid, Level 2: 2 droids (`E_Droid_A/B`), all in `echo_receiver`.
 - Exit: `Area3D` at tunnel mouth → `change_scene_to_file` (L1 → L2).
 - HUD (`sonar_hud.tscn`): `SONAR [E]` cooldown bar, `KONTAKTE: n`, `PING +n/7`.
@@ -96,7 +96,7 @@ Droid-Spawns: L1-Plaza 9-m-Roam mit nur Ground <3 m, L2-Slots 4/5 m mit
 - Godot 4.7, Forward Plus, Jolt Physics, D3D12, MSAA 3D 2x. Open folder in editor and press Play (main scene L1).
 - Headless AI check:
   `Godot_v4.7.2-stable_win64_console.exe --headless --path . -s res://tools/verify_stufe1.gd`
-  expects 12× `PASS` + `RESULT: OK` (`patrol bewegt`, `stuck-resolves ≤ 3`,
+  expects 13× `PASS` + `RESULT: OK` (`patrol bewegt`, `stuck-resolves ≤ 3`,
   `patrol ohne Navmesh`, `roam_radius` per droid, `hearing`, `chase nutzt
   Navmesh-Pfad`, `vision SEEN`, `catch mit LOS`, `l2 patrol`,
   `l2 hearing`, `l2 chase nutzt Navmesh`). Prints patrol metrics
