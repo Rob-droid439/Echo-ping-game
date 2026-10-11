@@ -8,7 +8,7 @@ shading_mode = 0
 albedo_color = Color(0.25, 0.9, 1, 1)
 emission_enabled = true
 emission = Color(0.25, 0.9, 1, 1)
-emission_energy_multiplier = 2.0
+emission_energy_multiplier = 0.9
 disable_fog = true
 
 [sub_resource type="StandardMaterial3D" id="ringmat2"]
@@ -17,7 +17,7 @@ shading_mode = 0
 albedo_color = Color(0.2, 0.6, 0.9, 0.6)
 emission_enabled = true
 emission = Color(0.2, 0.6, 0.9, 1)
-emission_energy_multiplier = 1.5
+emission_energy_multiplier = 0.7
 disable_fog = true
 
 [sub_resource type="TorusMesh" id="ring1mesh"]
@@ -45,7 +45,17 @@ mesh = SubResource("ring1mesh")
 cast_shadow = 0
 mesh = SubResource("ring2mesh")
 
+; Vertikal-Ringe (Rotation in _ready): Kreuz mit Ring1/Ring2 -> 3D-Kugel-Anmutung
+; statt flacher Scheibe. Teilen sich Mesh + Material mit den Horizontal-Ringen.
+[node name="RingV1" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("ring1mesh")
+
+[node name="RingV2" type="MeshInstance3D" parent="."]
+cast_shadow = 0
+mesh = SubResource("ring2mesh")
+
 [node name="Flash" type="OmniLight3D" parent="."]
 light_color = Color(0.4, 0.9, 1, 1)
-light_energy = 4.0
+light_energy = 1.6
 omni_range = 4.0
