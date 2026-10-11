@@ -108,6 +108,7 @@ var _eye_key := ""
 func _ready() -> void:
 	add_to_group("echo_receiver")
 	_spawn = global_position
+	_fix_rig_pivot()
 	_ap = _rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
 	for a in ["E_Anim_Patrol", "E_Anim_Idle", "E_Anim_Alert"]:
 		if _ap.has_animation(a):
@@ -128,6 +129,32 @@ func get_alert() -> String:
 		Alert.SEEN:
 			return "SEEN"
 	return "IDLE"
+
+
+## Rig-Pivot zentrieren (Fix 2026-10-11, Bot-Springen): Der Zentrier-Offset
+## des Droid-Meshes (Rig-Transform: -1,53 x / Scale 1,62) lag auf demselben
+## Node wie der Yaw (`_rig.rotation.y` in `_update_move`) — jede Drehung
+## schwang das Mesh auf einem 1,5-m-Arm (Pods/Thruster bis ~6 m Versatz),
+## was wie Teleport-Springen zu einem nahen Punkt aussah. Der Offset wandert
+## in ein Kind ("Model"), der Yaw läuft auf dem achszentrierten Rig.
+## Szenen-Datei bleibt unangetastet (Editor-Safety), Lookups via `_rig`
+## (AnimationPlayer, Eye-Meshes) funktionieren weiter durch die Ebene.
+func _fix_rig_pivot() -> void:
+	if _rig.get_node_or_null("Model") != null:
+		return
+	var off: Transform3D = _rig.transform
+	if off == Transform3D.IDENTITY:
+		return
+	var kids := _rig.get_children()
+	for k in kids:
+		_rig.remove_child(k)
+	_rig.transform = Transform3D.IDENTITY
+	var inner := Node3D.new()
+	inner.name = "Model"
+	inner.transform = off
+	_rig.add_child(inner)
+	for k in kids:
+		inner.add_child(k)
 
 
 func reset_droid() -> void:
