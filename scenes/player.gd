@@ -1,8 +1,8 @@
 extends CharacterBody3D
 ## Third-Person-Protagonist fuer Echo Cartographer 3D.
-## D-Rig (Idle/Walk/Sprint/PingCast) + SpringArm-Kamera. WASD kamerarelativ,
+## D-Rig (Idle/Walk/Sprint) + SpringArm-Kamera. WASD kamerarelativ,
 ## Shift = Sprint (1,5x), Gehen = 0,7x Basis. Leertaste springen,
-## E = Sonar-Ping (mit Wurf-Animation).
+## E = Sonar-Ping (nur Arm-Blowback an der Gun, Beine laufen weiter).
 ## Gruppe "player" (Exit-Trigger, HUD, Pickups).
 
 @export var speed: float = 5.0
@@ -25,6 +25,9 @@ const PING_SCENE: PackedScene = preload("res://scenes/sonar_ping.tscn")
 const RS: GDScript = preload("res://scenes/run_state.gd")
 const BASE_PING_RMAX: float = 25.0
 const BASE_PING_SPEED: float = 15.625
+const BLOWBACK_DUR: float = 0.28
+const BLOWBACK_HAND: float = 0.08
+const BLOWBACK_ARM: float = 0.04
 const SFX_PING: AudioStream = preload("res://assets/audio/Ping.wav")
 const SFX_DENIED: AudioStream = preload("res://assets/audio/PingNotReady.wav")
 
@@ -36,9 +39,12 @@ var _sfx_ping: AudioStreamPlayer
 var _sfx_denied: AudioStreamPlayer
 var _pitch: float = -0.18
 var _ping_left: float = 0.0
-var _ping_anim: float = 0.0
 var _sprinting: bool = false
 var _base_fov: float = 70.0
+var _blowback_t: float = 0.0
+var _skel: Skeleton3D
+var _bone_hand: int = -1
+var _bone_forearm: int = -1
 var _spawn_pos := Vector3.ZERO
 var _spawn_yaw := 0.0
 var _excluded: Array = []
@@ -65,6 +71,12 @@ func _ready() -> void:
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("D_Anim_Idle")
 	_base_fov = _cam.fov
+	var skels := _rig.find_children("*", "Skeleton3D", true, false)
+	if not skels.is_empty():
+		_skel = skels[0] as Skeleton3D
+	if _skel != null:
+		_bone_hand = _skel.find_bone("Hand_R")
+		_bone_forearm = _skel.find_bone("Forearm_R")
 	_arm.spring_length = cam_arm_length
 	_arm.rotation.x = _pitch
 	_sfx_ping = AudioStreamPlayer.new()
@@ -94,7 +106,8 @@ func respawn() -> void:
 	rotation = Vector3(0.0, _spawn_yaw, 0.0)
 	velocity = Vector3.ZERO
 	_ping_left = 0.0
-	_ping_anim = 0.0
+	_blowback_t = 0.0
+	_clear_blowback()
 	_pitch = -0.18
 	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 
@@ -120,10 +133,8 @@ func cast_ping() -> bool:
 		_sfx_denied.play()
 		return false
 	_sfx_ping.play()
-	if _ap.has_animation("D_Anim_PingCast"):
-		_ap.play("D_Anim_PingCast", 0.1)
-		_ap.speed_scale = 1.0 # Wurf immer Volltempo (kein Walk/Sprint-Rest)
-		_ping_anim = _ap.get_animation("D_Anim_PingCast").length
+	# Nur Arm-Blowback (kein Vollkoerper-Wurf): Beine laufen weiter.
+	_blowback_t = BLOWBACK_DUR
 	return true
 
 
@@ -159,7 +170,6 @@ func is_sprinting() -> bool:
 func _physics_process(delta: float) -> void:
 	_exclude_actors()
 	_ping_left = maxf(0.0, _ping_left - delta)
-	_ping_anim = maxf(0.0, _ping_anim - delta)
 	var iv := Vector2.ZERO
 	if Input.is_physical_key_pressed(KEY_W):
 		iv.y -= 1.0
@@ -197,11 +207,49 @@ func _physics_process(delta: float) -> void:
 	rotation.x = 0.0
 	rotation.z = 0.0
 	_update_anim(delta)
+	_update_blowback(delta)
+
+
+## Gun-Blowback: Hand + Unterarm federn beim Schuss zurueck (Translations-
+## Override auf der live-animierten Pose = lagert sich auf Walk/Sprint/Idle,
+## kein Einfrieren der Beine). Sin-Huellkurve: schnell raus, weich zurueck.
+func _update_blowback(delta: float) -> void:
+	if _skel == null or _blowback_t <= 0.0:
+		return
+	_blowback_t = maxf(0.0, _blowback_t - delta)
+	if _blowback_t <= 0.0 or _bone_hand < 0 or _bone_forearm < 0:
+		_clear_blowback()
+		return
+	var phase: float = 1.0 - _blowback_t / BLOWBACK_DUR
+	var punch: float = sin(phase * PI)
+	var back: Vector3 = (_rig.global_transform.basis.z).normalized()
+	var down := Vector3(0.0, -1.0, 0.0)
+	var hp: Transform3D = _skel.get_bone_global_pose(_bone_hand)
+	hp.origin += (back * BLOWBACK_HAND + down * 0.03) * punch
+	_skel.set_bone_global_pose_override(_bone_hand, hp, punch, true)
+	var fp: Transform3D = _skel.get_bone_global_pose(_bone_forearm)
+	fp.origin += (back * BLOWBACK_ARM + down * 0.015) * punch
+	_skel.set_bone_global_pose_override(_bone_forearm, fp, punch, true)
+
+
+func is_blowback_active() -> bool:
+	return _blowback_t > 0.0
+
+
+## Override hart zuruecksetzen: clear() stoppt nur das Anwenden, der Getter
+## behielte sonst die letzte Pose (sichtbar in Tests, unsichtbar im Spiel —
+## trotzdem explizit sauber).
+func _clear_blowback() -> void:
+	if _skel == null:
+		return
+	_skel.clear_bones_global_pose_override()
+	if _bone_hand >= 0:
+		_skel.set_bone_global_pose_override(_bone_hand, Transform3D.IDENTITY, 0.0, true)
+	if _bone_forearm >= 0:
+		_skel.set_bone_global_pose_override(_bone_forearm, Transform3D.IDENTITY, 0.0, true)
 
 
 func _update_anim(delta: float) -> void:
-	if _ping_anim > 0.0:
-		return
 	if not is_on_floor():
 		return
 	var planar := Vector2(velocity.x, velocity.z).length()

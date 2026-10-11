@@ -1,8 +1,9 @@
 extends SceneTree
 ## Sprint-Regression (Spec: Shift = 1,5x, Gehen = 0,7x Basis 5,0):
 ## Speeds, D_Anim_Sprint (Clip+Loop), Walk-Rate, FOV/Lean, Ping waehrend
-## Sprint, Release->Idle. Aufruf: console --headless --path . -s res://tests/regression_sprint.gd
-## Erwartung: 9x PASS + RESULT: OK.
+## Sprint (nur Arm-Blowback, Beine laufen weiter), Release->Idle.
+## Aufruf: console --headless --path . -s res://tests/regression_sprint.gd
+## Erwartung: 13x PASS + RESULT: OK.
 
 var _fails := 0
 var _f := 0
@@ -55,12 +56,18 @@ func _physics_process(_d: float) -> bool:
 		_check(_player.call("cast_ping"), "ping waehrend sprint moeglich")
 	if _f == 130:
 		_check(absf(_vel() - 7.5) < 0.3, "tempo bleibt nach ping")
+		_check(_ap.current_animation == "D_Anim_Sprint", "kein vollkoerper-wurf (beine laufen)")
+		_check(bool(_player.call("is_blowback_active")), "blowback aktiv nach schuss")
 		_w.pressed = false
 		_sh.pressed = false
 		Input.parse_input_event(_w)
 		Input.parse_input_event(_sh)
 	if _f == 260:
 		_check(_vel() < 0.5 and _ap.current_animation == "D_Anim_Idle", "release -> idle")
+		_check(not bool(_player.call("is_blowback_active")), "blowback vorbei")
+		var skel: Skeleton3D = _player.get_node("Rig").find_children("*", "Skeleton3D", true, false)[0]
+		var hi: int = skel.find_bone("Hand_R")
+		_check(skel.get_bone_global_pose_override(hi) == Transform3D.IDENTITY, "hand-override gecleared")
 		print("RESULT: ", "FAIL" if _fails > 0 else "OK", " (", _fails, " Fehler)")
 		return true
 	return false
