@@ -17,7 +17,7 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
 
 ## Gameplay
 
-- 3rd-person controller (D-Rig: `D_Anim_Idle` / `D_Anim_Walk` / `D_Anim_PingCast`) + SpringArm camera.
+- 3rd-person controller (D-Rig: `D_Anim_Idle` / `D_Anim_Walk` / `D_Anim_Sprint` / `D_Anim_PingCast`) + SpringArm camera. Walk 3.5 m/s (0.7x), Sprint 7.5 m/s (1.5x) with own 16f run cycle (lean, flight phase), FOV-kick + lean, Walk-rate 0.7 vs foot-slide.
 - Sonar-ping (`E`): expanding ring-cross (2 horizontal + 2 vertikal = 3D-Kugel-Silhouette) + spark scatter (160 GPU-Partikel, Kugel-Emission im Front-Tempo, Alpha-Rampe) + gedimmter light flash (1,6 statt 4,0; Ring-Emission 0,9/0,7), base radius 25 m, base expand speed 15.625 m/s (~1.6 s), cooldown 1.33 s.
   - Reveal through walls (X-ray): everything in group `echo_receiver` hit by the wavefront gets a `PingMarker` + `E_Anim_Alert` + HUD contact.
   - Droids hear the ping (see AI below) via group `active_ping` + `get_radius()`.
@@ -41,6 +41,7 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
 ## Controls
 
 - `WASD`: move camera-relative
+- `Shift`: sprint (1.5x, only with movement input)
 - Mouse: look (captured, `ESC` releases, click re-captures)
 - `Space`: jump
 - `E`: sonar ping
@@ -106,6 +107,10 @@ Droid-Spawns: L1-Plaza 9-m-Roam mit nur Ground <3 m, L2-Slots 4/5 m mit
   `Godot_v4.7.2-stable_win64_console.exe --headless --path . -s res://tests/regression_m1_door.gd`
   expects 5× `PASS` + `RESULT: OK` (M1-Tür-Chase per Navmesh mit 0 stucks,
   kein Catch durch die Wand).
+- Sprint + pivot regression:
+  `res://tests/regression_sprint.gd` expects 10× `PASS` (3,5/7,5 m/s,
+  Sprint-Clip, Walk-Rate, FOV, Ping-im-Sprint, Release-Idle);
+  `res://tests/regression_droid_pivot.gd` expects 2× `PASS` (Yaw starr).
 
 ## Development
 
