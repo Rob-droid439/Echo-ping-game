@@ -3,7 +3,7 @@ extends SceneTree
 ## Speeds, D_Anim_Sprint (Clip+Loop), Walk-Rate, FOV/Lean, Ping waehrend
 ## Sprint (nur Arm-Blowback, Beine laufen weiter), Release->Idle.
 ## Aufruf: console --headless --path . -s res://tests/regression_sprint.gd
-## Erwartung: 13x PASS + RESULT: OK.
+## Erwartung: 14x PASS + RESULT: OK.
 
 var _fails := 0
 var _f := 0
