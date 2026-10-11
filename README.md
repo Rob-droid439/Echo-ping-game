@@ -18,13 +18,13 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
 ## Gameplay
 
 - 3rd-person controller (D-Rig: `D_Anim_Idle` / `D_Anim_Walk` / `D_Anim_PingCast`) + SpringArm camera.
-- Sonar-ping (`E`): expanding double-ring + light flash, base radius 25 m, base expand speed 15.625 m/s (~1.6 s), cooldown 1.33 s.
+- Sonar-ping (`E`): expanding ring-cross (2 horizontal + 2 vertikal = 3D-Kugel-Silhouette) + spark scatter (160 GPU-Partikel, Kugel-Emission im Front-Tempo, Alpha-Rampe) + gedimmter light flash (1,6 statt 4,0; Ring-Emission 0,9/0,7), base radius 25 m, base expand speed 15.625 m/s (~1.6 s), cooldown 1.33 s.
   - Reveal through walls (X-ray): everything in group `echo_receiver` hit by the wavefront gets a `PingMarker` + `E_Anim_Alert` + HUD contact.
   - Droids hear the ping (see AI below) via group `active_ping` + `get_radius()`.
 - Ping powerups (port from 2D/Java `PowerUp.java` + `PingManager`): green diamonds, max 7 stacks run-wide (`run_state.gd`, survives scene change), each +7.5 % radius / +15 % speed. HUD shows `PING +n/7`.
   - Level 1: 3 pickups, Level 2: 3 pickups.
 - Droid AI (port from Java `EnemyAI` + `HearingModel` + `Enemy`, `scenes/droid_ai.gd` / `e_droid.tscn`):
-  - Patrol: random waypoints in per-droid roam radius (`@export roam_radius`: L1 9 m open plaza, L2-A 4 m / L2-B 5 m tight slots) + pause, speed 3.5 m/s with variance.
+  - Patrol: random waypoints in per-droid roam radius (`@export roam_radius`: L1 9 m open plaza, L2-A 4 m / L2-B 5 m tight slots) + pause, speed 3.5 m/s with variance. Rig-pivot achszentriert (Zentrier-Offset in `Rig/Model`-Kind, Yaw starr um Körperachse — vorher schwenkte das Mesh bis ~6 m und wirkte wie Teleport-Springen).
   - Waypoint validation (no navmesh, stage 1): ground ray below + free line-of-sight from bot, else re-roll (max 8 tries, then direction sampling). Rejects counted in debug stats.
   - Wall feelers: 3 short raycasts (front/left/right, 2 m) steer the heading away instead of frontal wall-sliding; dead ends trigger sampling resolve.
   - Stuck-resolve with direction sampling (3 candidates, freest wins) instead of fixed sidestep; `test_move` guard before moves (anti wall-clip); `STUCK_TIME` 0.3 s kept.
