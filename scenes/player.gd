@@ -1,10 +1,15 @@
 extends CharacterBody3D
 ## Third-Person-Protagonist fuer Echo Cartographer 3D.
-## D-Rig (Idle/Walk/PingCast) + SpringArm-Kamera. WASD kamerarelativ,
-## Leertaste springen, E = Sonar-Ping (mit Wurf-Animation).
+## D-Rig (Idle/Walk/Sprint/PingCast) + SpringArm-Kamera. WASD kamerarelativ,
+## Shift = Sprint (1,5x), Gehen = 0,7x Basis. Leertaste springen,
+## E = Sonar-Ping (mit Wurf-Animation).
 ## Gruppe "player" (Exit-Trigger, HUD, Pickups).
 
 @export var speed: float = 5.0
+@export var walk_mult: float = 0.7
+@export var sprint_mult: float = 1.5
+@export var sprint_fov_kick: float = 8.0
+@export var sprint_lean: float = 0.14
 @export var accel: float = 20.0
 @export var jump_velocity: float = 4.5
 @export var mouse_sens: float = 0.0025
@@ -32,6 +37,8 @@ var _sfx_denied: AudioStreamPlayer
 var _pitch: float = -0.18
 var _ping_left: float = 0.0
 var _ping_anim: float = 0.0
+var _sprinting: bool = false
+var _base_fov: float = 70.0
 var _spawn_pos := Vector3.ZERO
 var _spawn_yaw := 0.0
 var _excluded: Array = []
@@ -53,10 +60,11 @@ func _ready() -> void:
 	call_deferred("_exclude_actors")
 	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
 	_ap = _rig.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	for a in ["D_Anim_Idle", "D_Anim_Walk"]:
+	for a in ["D_Anim_Idle", "D_Anim_Walk", "D_Anim_Sprint"]:
 		if _ap.has_animation(a):
 			_ap.get_animation(a).loop_mode = Animation.LOOP_LINEAR
 	_ap.play("D_Anim_Idle")
+	_base_fov = _cam.fov
 	_arm.spring_length = cam_arm_length
 	_arm.rotation.x = _pitch
 	_sfx_ping = AudioStreamPlayer.new()
@@ -114,6 +122,7 @@ func cast_ping() -> bool:
 	_sfx_ping.play()
 	if _ap.has_animation("D_Anim_PingCast"):
 		_ap.play("D_Anim_PingCast", 0.1)
+		_ap.speed_scale = 1.0 # Wurf immer Volltempo (kein Walk/Sprint-Rest)
 		_ping_anim = _ap.get_animation("D_Anim_PingCast").length
 	return true
 
@@ -138,6 +147,15 @@ func get_ping_cooldown_frac() -> float:
 	return clampf(1.0 - _ping_left / ping_cooldown, 0.0, 1.0)
 
 
+## Ziel-Tempo (Test-Hook): Sprint 1,5x / Gehen 0,7x Basis.
+func _target_speed(sprint: bool) -> float:
+	return speed * (sprint_mult if sprint else walk_mult)
+
+
+func is_sprinting() -> bool:
+	return _sprinting
+
+
 func _physics_process(delta: float) -> void:
 	_exclude_actors()
 	_ping_left = maxf(0.0, _ping_left - delta)
@@ -158,8 +176,12 @@ func _physics_process(delta: float) -> void:
 	var dir: Vector3 = yaw_basis * Vector3(iv.x, 0.0, iv.y)
 	if dir.length() > 0.001:
 		dir = dir.normalized()
-	velocity.x = move_toward(velocity.x, dir.x * speed, accel * delta)
-	velocity.z = move_toward(velocity.z, dir.z * speed, accel * delta)
+	# Sprint: Shift + Bewegungsinput (alle Richtungen, kein Stamina).
+	# Gehen = 0,7x, Sprint = 1,5x Basis. Luft-Tempo bleibt (Momentum).
+	_sprinting = Input.is_physical_key_pressed(KEY_SHIFT) and iv.length() > 0.1
+	var target_speed := _target_speed(_sprinting)
+	velocity.x = move_toward(velocity.x, dir.x * target_speed, accel * delta)
+	velocity.z = move_toward(velocity.z, dir.z * target_speed, accel * delta)
 	if not is_on_floor():
 		velocity.y -= ProjectSettings.get_setting("physics/3d/default_gravity") * delta
 	elif Input.is_physical_key_pressed(KEY_SPACE):
@@ -183,9 +205,22 @@ func _update_anim(delta: float) -> void:
 	if not is_on_floor():
 		return
 	var planar := Vector2(velocity.x, velocity.z).length()
-	var want := &"D_Anim_Walk" if planar > 0.5 else &"D_Anim_Idle"
+	var sprinting_now: bool = _sprinting and planar > 0.5
+	var want := &"D_Anim_Idle"
+	var rate := 1.0
+	if planar > 0.5:
+		if sprinting_now and _ap.has_animation("D_Anim_Sprint"):
+			want = &"D_Anim_Sprint"
+			rate = 1.0 # Clip nativ fuer Sprint-Tempo (7,5 m/s) gebaut
+		else:
+			want = &"D_Anim_Walk"
+			rate = walk_mult # Clip fuer 5,0 m/s -> 0,7 gegen Foot-Slide
 	if _ap.current_animation != want:
-		_ap.play(want, 0.15)
+		_ap.play(want, 0.2)
+	_ap.speed_scale = rate
+	# Sprint-Feeling: FOV-Kick + Vorneige, weich rein/raus.
+	_cam.fov = lerpf(_cam.fov, _base_fov + (sprint_fov_kick if sprinting_now else 0.0), 6.0 * delta)
+	_rig.rotation.x = lerpf(_rig.rotation.x, (-sprint_lean if sprinting_now else 0.0), 6.0 * delta)
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
 	if flat.length() > 0.5:
 		# Rig ist Kind des Bodies: Welt-Yaw in Body-lokal umrechnen.
