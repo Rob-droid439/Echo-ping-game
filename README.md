@@ -2,7 +2,8 @@
 
 Description:
 ------------
-3D Cyberpunk-esque future dystopia third person game,
+3D Version of my 2D Cartograph game that I purely started out of curiosity and how far I can come with AI, transposing the game idea into this more complex dimension.
+Cyberpunk-esque future dystopia third person game,
 where the no-named protagonist has to escape his city,
 which has been taken over by AI.
 Whilst trying to exit the city, he also has to avoid and escape the evil robot droids, that try to chase him.
