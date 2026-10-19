@@ -147,8 +147,16 @@ func _run() -> void:
 						bestd = dd
 						best = m
 				if best != null and bestd < 3.0:
-					partner_mis.append(best)
 					mode = "proximity-%.2fm" % bestd
+					# Generic-Body: nur den Naehesten zu nehmen wuerde Namens-Teile
+					# der Sicht-Familie verlieren (z.B. L1_Barrel + L1_Barrel_Flame).
+					var fam_name := String(best.name)
+					var fam: Array = []
+					for m in meshes:
+						var mn: String = String(m.name)
+						if mn == fam_name or mn.begins_with(fam_name + "_"):
+							fam.append(m)
+					partner_mis = fam
 		var tris := 0
 		if sh is ConcavePolygonShape3D:
 			tris = (sh as ConcavePolygonShape3D).get_faces().size() / 3
