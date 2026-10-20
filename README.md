@@ -2,7 +2,7 @@
 
 Description:
 ------------
-3D Version of my 2D Cartograph game that I purely started out of curiosity and how far I can come with AI, transposing the game idea into this more complex dimension.
+3D Version of my 2D Cartograph game that I purely started out of curiosity on how far I can come with AI, transposing the game idea into this more complex dimension.
 Cyberpunk-esque future dystopia third person game,
 where the no-named protagonist has to escape his city,
 which has been taken over by AI.
