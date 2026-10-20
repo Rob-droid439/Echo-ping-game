@@ -60,6 +60,23 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
 - `assets/audio/` — SFX aus dem 2D-Original (wav, LFS), Helper `scenes/sfx.gd`
 - `tools/` — git-ignored headless verifiers (`verify_droid.gd`: patrol/hearing/vision/catch/L2)
 
+## Hitbox-Winding-Fix + Walkproof (2026-10-21)
+
+Die inversen Faces an 38 `colonly`-Proxies + 92 `col`-Collidern (Winding nach
+aussen gedreht) sorgten dafuer, dass man ins Wreck-Auto und andere Body-
+Proxies **hineinlaufen** konnte. Fix in der `.blend` (nicht in importierten
+Nodes), Re-Export beider Karten, Node-Namensmengen identisch zum Vorher-State
+(L1 916, L2 567 Nodes). Empirischer Beweis (headless Walk-Tests mit der echten
+player.gd-Bewegungslogik, `reports/probe_evidence.md`):
+
+- West-Zulauf auf das Auto: Stop bei x = 35.672 (Westface 36.095).
+- Um das Auto: Nordflanke frei laufbar (bis x = 36.839), keine unsichtbare Wand.
+- Ost-Zulauf: Stop bei x = 42.319 (Ostface 41.905).
+- Korridor-Raster 33.0–36.5: frei bis zur Westface, kein anderer Blocker.
+
+Abnahmefotos: `reports/proof_l1_car_stop.png`, `proof_l1_spawn_plaza.png`,
+`proof_l1_exit.png`, `proof_l2_spawn.png`, `proof_l2_exit_approach.png`.
+
 ## Collision (Blender → Godot)
 
 Naming in Blender drives the glTF import, no manual work in Godot:

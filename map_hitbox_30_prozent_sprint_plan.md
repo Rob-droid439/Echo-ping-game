@@ -1,4 +1,4 @@
-﻿# Plan: Map-Hitbox-Audit Â· 30 %-Skalierung Â· Sprint-Knie-Fix
+# Plan: Map-Hitbox-Audit Â· 30 %-Skalierung Â· Sprint-Knie-Fix
 
 **Stand:** 2026-10-19 Â· **Repo:** `3d-cartograph-game` Â· **Scope:** L1 + L2 (Maps) + `D_Protagonist` (Sprint-Clip)
 **Status-Legende:** `[ ]` offen Â· `[~]` in Arbeit Â· `[x]` fertig
@@ -155,11 +155,11 @@ Vorgehen je Finding:
 
 ## 8. Definition of Done global
 
-- `[ ]` Wasserfest: `reports/*_hitbox_report.md` zeigt 0 P0 / 0 P1 Findings in beiden Levels.
-- `[ ]` Auto-Fall: Killbox-Sweep am Auto liefert 0 blockierte Samples; Spieler kann in alle 8 Richtungen laufen und sprinten.
-- `[ ]` 30 %: beide Karten einheitlich x1.3 (Ursprung am Boden); Gameplay-Objekte folgen (Exits/Spawns/Powerups/Droiden); Navmesh und alle Test-Regeln grÃ¼n.
-- `[ ]` Knie: `audit_knee` beweist korrekte Beugung in beiden ZustÃ¤nden (Walk korrekt und Sprint nach Fix korrekt), keine RÃ¼ckwÃ¤rts-Knie-Ausreisser.
-- `[ ]` Keine Regression: alle drei Tests PASS; README-Abschnitt mit Abnahmefotos.
+- `[x]` Wasserfest: `reports/*_hitbox_report.md` zeigt 0 P0 / 0 P1 Findings in beiden Levels.
+- `[x]` Auto-Fall: Killbox-Sweep am Auto liefert 0 blockierte Samples; Spieler kann in alle 8 Richtungen laufen und sprinten.
+- `[x]` 30 %: beide Karten einheitlich x1.3 (Ursprung am Boden); Gameplay-Objekte folgen (Exits/Spawns/Powerups/Droiden); Navmesh und alle Test-Regeln grÃ¼n.
+- `[x]` Knie: `audit_knee` beweist korrekte Beugung in beiden ZustÃ¤nden (Walk korrekt und Sprint nach Fix korrekt), keine RÃ¼ckwÃ¤rts-Knie-Ausreisser.
+- `[x]` Keine Regression: alle drei Tests PASS; README-Abschnitt mit Abnahmefotos.
 
 ---
 
