@@ -2,7 +2,7 @@
 ## M1-Tuer-Chase + Through-Wall-Catch Regression (Plan Â§6 Fertig-Kriterien).
 ## Aufruf: console --headless --path . -s res://tests/regression_m1_door.gd
 ## Erwartung: 5x PASS + RESULT: OK.
-## Godot (x,y,z) <-> Blender (x,-z,y): M1-Tuer Blender (39.9,-21) = Godot (39.9,21). (Map x1.4)
+## Godot (x,y,z) <-> Blender (x,-z,y): M1-Tuer Blender (28.5,-15) = Godot (28.5,15).
 
 var _fails := 0
 var _frame := 0
@@ -34,10 +34,10 @@ func _physics_process(_delta: float) -> bool:
 	if _phase == 0:
 		# Tuer-Chase: Droid suedlich vor M1-Tuer, Spieler drin -> Ping.
 		if _frame == 5:
-			(_droid as Node3D).global_position = Vector3(39.669, 0.14, 18.2)
+			(_droid as Node3D).global_position = Vector3(37.05, 0.13, 16.9)
 			_droid.call("reset_droid")
-			(_droid as Node3D).global_position = Vector3(39.669, 0.14, 18.2)
-			_player.global_position = Vector3(39.2, 0.14, 26.6)
+			(_droid as Node3D).global_position = Vector3(37.05, 0.13, 16.9)
+			_player.global_position = Vector3(36.4, 0.13, 24.7)
 			_nav0 = int((_droid.call("get_debug_stats") as Dictionary)["nav_steps"])
 			(_player as Node).call("cast_ping")
 		if _frame == 600:
@@ -54,10 +54,10 @@ func _physics_process(_delta: float) -> bool:
 	elif _phase == 1:
 		# Through-Wall-Catch: 1,2 m Abstand, M1-Suedwand dazwischen, SEEN erzwungen.
 		if _frame == 5:
-			(_droid as Node3D).global_position = Vector3(37.8, 0.14, 20.16)
+			(_droid as Node3D).global_position = Vector3(35.1, 0.13, 18.72)
 			_droid.call("reset_droid")
-			(_droid as Node3D).global_position = Vector3(37.8, 0.14, 20.16)
-			_wall_player_pos = Vector3(37.8, 0.14, 21.84)
+			(_droid as Node3D).global_position = Vector3(35.1, 0.13, 18.72)
+			_wall_player_pos = Vector3(35.1, 0.13, 20.28)
 			_player.global_position = _wall_player_pos
 			_droid.call("_set_aggro", _wall_player_pos, 5.0, true)
 		if _frame == 120:

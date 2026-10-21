@@ -44,19 +44,23 @@ InputMap-Aktionen definiert.
 - x = 42.3 … 42.0: geklemmt an `L1_Wreck_0/EchoCart_L1` bei **x = 41.9054**,
   Normale (+1, 0, 0) = Ostface.
 
-## Abnahmefotos (godot_reports, Stand nach ×1.4)
+## Abnahmefotos (godot_reports, Stand Anbau = ×1.3-Layout + West-Anbau)
 
-- `reports/proof_l1_car_stop.png` — Spieler am Stop-Punkt (37.9, 35.54) vor der
-  Westface (Auto/EchoCart_L1 als dunkle Silhouette).
+- `reports/proof_l1_car_stop.png` — Spieler am Stop-Punkt (35.67, 33) vor der
+  Westface 36.095 (Auto/Wracks als dunkle Silhouette vorn links).
 - `reports/proof_l1_spawn.png` — Spawn/Plaza-Übersicht L1.
-- `reports/proof_l1_exit.png` — ExitTrigger-Bereich L1 (Spieler (82, 42),
-  Blick NE auf (87.5, 47.6)).
-- `reports/proof_l1_bollard_moved.png` — Poller mit Pink-Band nahe am Spieler,
-  neue Poller-Linie z = 32.9 (Poller-Beweisdaten: Bollard_6-Translation
-  (53.2, 0.63, 32.9), s. Abschnitt 6).
-- `reports/proof_l2_spawn.png` — Spawn-Übersicht L2 (Player 7.59, 105.27).
-- `reports/proof_l2_exit.png` — Spieler (84, 112), Blick NE aufs ExitTrigger
-  (88.2, 119).
+- `reports/proof_l1_exit.png` — Spieler (58, 33), Blick SE aufs ExitTrigger
+  (81.25, 44.2).
+- `reports/proof_l1_bollard_ping.png` — Bollard (Poller-Linie z = 30.55) mit
+  Pink-Band leuchtend direkt neben dem Spieler nach `cast_ping`.
+- `reports/proof_l1_annex.png` — Spieler (5, 33), Blick nach Westen in den
+  neuen Anbau-Streifen.
+- `reports/proof_l2_spawn.png` — Spawn-Übersicht L2 (Player 7.045, 0.452,
+  97.751).
+- `reports/proof_l2_exit.png` — Spieler (58, 100), Blick SE aufs ExitTrigger
+  (81.9, 110.5).
+- `reports/proof_l2_annex.png` — Spieler (5, 88), Blick nach Westen in den
+  Anbau-Streifen.
 
 ## Kontext
 
@@ -82,46 +86,45 @@ InputMap-Aktionen definiert.
 - Beweisfoto reports/proof_l1_bollard_moved.png (Poller mit Pink-Band neben
   der Strasse, Auto-Wrack separat im Bild).
 
-## 6) Map linear ×1.4 total (2026-10-21)
+## 6) West-Anbau +34 m, Layout ×1.3 (2026-10-21)
 
-User-Ziel: 40 % mehr Quadratmeter in beiden Maps, Verfahren wie im
-×1.3-Pass (`map_hitbox_30_prozent_sprint_plan.md`, nach Fertigstellung
-aus dem Repo entfernt). Gewählte Umsetzung: **linear ×1.4 total**
-(Strecken ×1.4 → Fläche ×1.96), damit alle Abstände/Sperrfenster aus
-dem verifizierten ×1.3-Stand exakt mit dem Faktor 14/13 weiterrechnen.
+User-Ziel: mehr Fläche über einen bebauten Anbau-Streifen statt linearer
+Skalierung. Stufe 8 ersetzt Stufe 7 (linear ×1.4, verworfen): beide Karten
+um einen **34 m langen West-Anbau** (x ≈ −34..0) erweitert, sonst Layout auf
+dem verifizierten ×1.3-Stand (`scenes/level_*.tscn` +
+`tests/regression_m1_door.gd` von e4d0cd3 revertiert, GLBs ersetzt).
 
-- Blender: alle Objekte beider Karten um `alt × 14/13 = 1.0769231`
-  versetzt (Pole x = 0, z = 0) — Models, `col`/`colonly`-Proxies,
-  Bänder, Lampen, FX-Helfer bleiben gemeinsam ausgerichtet. Re-Export:
-  `EchoCart_L1.glb` 20.205.916 B / 916 Nodes, `EchoCart_L2.glb`
-  15.273.392 B / 567 Nodes (Node-Mengen identisch).
-- Beweisdaten im GLB (Headless-Glättung `py glbcheck.py`):
-  `L1_Bollard_6` Translation exakt (53.2, 0.63, 32.9) bei Scale 1.4,
-  Proxy `colonly` (8.4, 0, 0) · 1.4, Bollard_5 x = 28.0, Bollard_7
-  x = 61.6 — Poller-Linie z = 32.9 (vorher 30.55).
-- Audits (`tools/audit_hitbox.gd`): L1 colliders 275 / meshes 887 /
-  unpaired 0 / P0 0 / P1 0 / Killbox-Sweep 613 Punkte, 0 illegitime
-  Blocks; L2 colliders 141 / meshes 558 / unpaired 0 / P0 0 / P1 0.
-  Berichte neu geschrieben (reports/level_*_hitbox_report.md).
-- Navmesh (`tools/bake_navmesh.gd`, agent climb 0.45): L1 972 Polys /
-  1130 Verts, L2 856 Polys / 1012 Verts, Fehler 0 (Backtrace-Warning
-  benign; Rebakes ohne Kollision-Fehler). M1-Tür-Check: Schwelle
-  ~0.42 < climb 0.45 — Tür bleibt passierbar.
-- Walkproof `tools/probe_around.gd` (Fenster ×14/13):
-  SEG-A (West-Zulauf) Stop best_x = 38.478, Fenster 38.123–38.662,
-  Westface 38.87 — PASS.
-  SEG-B (Nordflanke) frei bis x = 39.645, Schwelle 39.631 — PASS.
-  SEG-C (Ost-Zulauf) Stop min_x = 45.544, Fenster 45.231–45.877,
-  Ostface 45.13 — PASS.
-- Regressionen: sprint 14/14 PASS, m1_door 5/5 PASS (Tuer-Durchgang
-  SEEN, nav_steps 91, Distanz 1.038 m, 0 stucks), droid_pivot 2/2 PASS
-  (Pivot-Maxfehler 1.79e-7).
-- `.tscn`-Gameplay-Knoten per Formel `alt × 14/13` nachgesetzt und
-  verifiziert — L1: Player (20.583, 0.864, 34.216), ExitTrigger
-  (87.5, 2.8, 47.6), E_Droid (63.447, 0, 7.639) Roam 12.6, Sonar-Ring
-  (64.981, 0, 8.628), Powerups M1/S1/W2 (39.2, 25.2 / 14, 42 /
-  21, 14.7); L2: Player (7.590, 0.487, 105.270), ExitTrigger
-  (88.2, 2.8, 119), E_Droid_A/B (42, 95.2 / 53.2, 98) Roam 5.6/7.0,
-  RuinA/B (44.8, 82.6 / 44.8, 119), Plaza-Ruine (35, 95.2).
-- Abnahmefotos: s. Abschnitt "Abnahmefotos" oben (6 PNG nach ×1.4,
-  L1 Spawn/Stop/Poller/Exit, L2 Spawn/Exit).
+- GLBs neu importiert: `EchoCart_L1.glb` **1002 Nodes**, `EchoCart_L2.glb`
+  **657 Nodes** (vorher 916 / 567). Anbau-Namen `*_Anx` verifiziert, u. a.
+  Annex-Node-Scales FugeY 0.53125, Curb 1.214286, Rail 1.230769;
+  `-colonly`-Mesh-Verts × Node-Scale 1.3 = Weltposition (Auto-Barriere:
+  Verts x 27.765..32.235 → Faces 36.095 / 41.906, unverändert zum
+  ×1.3-Walkproof).
+- Audits (`tools/audit_hitbox.gd`): L1 colliders 309 / meshes 966 /
+  unpaired 0 / P0 0 / **P1 2**(FX-Deko-Gruppen „L1_Barrel_Flame (+3 Teile)“
+  und „L1_B_S1_InBarrel“, bewusst ohne Collider) / Killbox-Sweep 613
+  Punkte, 0 illegitime Blocks / kb_offzone_blocked 0; L2 colliders 186 /
+  meshes 643 / unpaired 0 / P0 0 / P1 0. Berichte neu geschrieben
+  (reports/level_*_hitbox_report.md).
+- Navmesh (`tools/bake_navmesh.gd`, agent climb 0.45) im sauberen Szenen-
+  Stand neu gebacken: **L1 1037 Polys / 1146 Verts, L2 1014 Polys /
+  1162 Verts**, Fehler 0. (Ältere Bakes 972/856 waren mit Stale-Cache
+  gebacken und ungültig.)
+- Walkproof `tools/probe_around.gd` (Fenster ×1.3):
+  SEG-A (West-Zulauf) Stop best_x = 35.672, Fenster 35.400–35.900,
+  Westface 36.095 — PASS.
+  SEG-B (Nordflanke) frei bis x = 36.839, Schwelle 36.800 — PASS.
+  SEG-C (Ost-Zulauf) Stop min_x = 42.319, Fenster 42.000–42.600 — PASS.
+- Regressionen: sprint PASS, m1_door 5/5 PASS (Tür-Durchgang SEEN,
+  nav_steps 84, Distanz 1.02 m, 0 stucks, 0 waypoint_rejects, kein Catch
+  durch Wand — paused=false, player_moved 0.0535), droid_pivot 2/2 PASS.
+- **Ops-Lektion (Stale-Cache):** Nach GLB-Austausch müssen
+  `.godot/imported/EchoCart_L*.glb-*` und `assets/maps/*.glb.import`
+  gelöscht und der Godot-Import neu laufen — sonst lädt Godot weiter
+  veraltete Cache-Szenen (hier: September-Import mit ×1.4-Skalierung,
+  916 statt 1002 Nodes; alle Tests sind dann falsch). Diagnose:
+  Instanz-Kindzahl (916 = stale / 1002 = frisch). Die Warnung
+  „Unrecognized UID: uid://ccweiit44ig06“ nach Reimport ist benign
+  (Loader fällt auf Pfad zurück).
+- Abnahmefotos: s. Abschnitt "Abnahmefotos" oben (8 PNG: L1
+  Spawn/Stop/Poller-Ping/Exit/Anbau, L2 Spawn/Exit/Anbau).

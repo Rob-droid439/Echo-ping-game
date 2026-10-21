@@ -83,33 +83,36 @@ hielt sich in den Nordflanken-Laufweg zum Auto (+7.8 X versetzt, 41.6 → 49.4,
 auf der Poller-Linie y = 30.55). Navmesh L1 neu gebacken (885 Polys), Audit
 weiterhin 0 P0/0 P1, Walkproof A/B/C weiter PASS.
 
-## Map linear ×1.4 total — 40 % mehr Fläche (2026-10-21)
+## Map-Anbau West +34 m — Layout zurück auf ×1.3 (2026-10-21)
 
-Beide Karten linear auf **×1.4 total** skaliert (Strecken ×1.4 → Fläche
-×1.96), nach dem bewährten Verfahren aus dem ×1.3-Pass: Upload-Objekte in
-der `.blend` per Formel `alt × 14/13` versetzt, GLB-Exporte neu, Godot-
-Reimport, Audits, Navmesh-Rebake, Gameplay-Knoten in `.tscn` nachgezogen
-(Player, ExitTrigger, Droiden, Powerups, Sonar-Ring).
+Stufe 8 ersetzt Stufe 7 (linear ×1.4, verworfen): Beide Karten um einen
+**34 m langen bewohnten West-Anbau** (x ≈ −34..0) erweitert, sonst gilt
+der verifizierte ×1.3-Stand — deshalb sind `scenes/level_*.tscn` und
+`tests/regression_m1_door.gd` auf e4d0cd3 revertiert und die GLBs
+getauscht worden.
 
-- GLBs: `EchoCart_L1.glb` 20.205.916 B / 916 Nodes, `EchoCart_L2.glb`
-  15.273.392 B / 567 Nodes (Node-Mengen identisch; `L1_Bollard_6`
-  Translation exakt (53.2, 0.63, 32.9) bei Scale 1.4).
-- Audits: beide 0 P0 / 0 P1 / unpaired=0 (L1 colliders 275, meshes 887,
-  Killbox-Sweep 613 Punkte / 0 illegitime Blocks; L2 colliders 141,
-  meshes 558). Navmesh: L1 972 Polys / 1130 Verts, L2 856 Polys /
-  1012 Verts (agent climb 0.45; M1-Tür passierbar, Schwelle 0.42).
-- Walkproof (`tools/probe_around.gd`, Fenster ×14/13): West-Stop 38.478
-  (Fenster 38.123–38.662), Nordflanke frei bis 39.645 (Schwelle 39.631),
-  Ost-Stop 45.544 (Fenster 45.231–45.877) — PASS. Regressionen: sprint
-  14 PASS, m1_door 5 PASS (Tür-Durchgang SEEN, 0 stucks), droid_pivot
-  2 PASS (Pivot-Maxfehler 1.8e-7). Details: `reports/probe_evidence.md`
-  Abschnitt 6 (Walkproof) und Abnahmefotos.
+- GLBs: `EchoCart_L1.glb` 1002 Nodes, `EchoCart_L2.glb` 657 Nodes
+  (vorher 916 / 567); Anbau-Nodes `*_Anx` verifiziert.
+- Audits: L1 colliders 309 / meshes 966 / unpaired 0 / P0 0 / **P1 2**
+  (beides FX-Deko-Gruppen ohne Collider, by design), Killbox-Sweep
+  613 Punkte / 0 illegitime Blocks; L2 colliders 186 / meshes 643 /
+  0 P0 / 0 P1.
+- Navmesh neu gebacken: L1 1037 Polys / 1146 Verts, L2 1014 Polys /
+  1162 Verts (agent climb 0.45).
+- Walkproof (`tools/probe_around.gd`, Fenster ×1.3): West-Stop 35.672
+  (Fenster 35.400–35.900), Nordflanke frei bis 36.839 (Schwelle
+  36.800), Ost-Stop 42.319 (Fenster 42.000–42.600) — PASS.
+  Regressionen: sprint PASS, m1_door 5 PASS (Tür-Durchgang SEEN,
+  Distanz 1.02 m, kein Catch durch Wand), droid_pivot 2 PASS.
+  Details: `reports/probe_evidence.md` Abschnitt 6.
+- Ops-Lektion: nach GLB-Austausch `.godot/imported/*.glb-*` und
+  `*.glb.import` löschen + Reimport erzwingen — ein alter Cache lädt
+  sonst unsichtbar die ×1.4-Szene weiter (Nodes 916 statt 1002).
 - Abnahmefotos: `reports/proof_l1_spawn.png`, `proof_l1_car_stop.png`
-  (Spieler am Stop-Punkt (37.9, 35.54) vor der Westface 38.87),
-  `proof_l1_bollard_moved.png` (Poller mit Pink-Band auf der neuen
-  Poller-Linie z = 32.9), `proof_l1_exit.png`, `proof_l2_spawn.png`,
-  `proof_l2_exit.png` (Spieler (84, 112), Blick NE aufs ExitTrigger
-  (88.2, 119)).
+  (Stop (35.67, 33) vor der Westface 36.095), `proof_l1_bollard_ping.png`
+  (Bollard mit Pink-Band auf der Poller-Linie z = 30.55),
+  `proof_l1_exit.png`, `proof_l1_annex.png` (Blick nach Westen in den
+  Anbau), `proof_l2_spawn.png`, `proof_l2_exit.png`, `proof_l2_annex.png`.
 
 ## Collision (Blender → Godot)
 
