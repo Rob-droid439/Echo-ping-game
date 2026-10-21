@@ -32,6 +32,14 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
   - Hearing: ping suspicion with latency (0.06–0.2 s), falloff², wavefront gaussian, 0.88 occlude damping, threshold 0.12 → `HEARD` with position uncertainty (1.5 m → 0.25 m by signal strength). `HEARD` targets are clamped to last free position before walls (no charging at walls that hid the ping).
   - Vision: 28° cone (`DOT 0.8829`), 9 m range, line-of-sight raycast → `SEEN` exact.
   - Chase: `SEEN` exact / `HEARD` clamped with scatter, strafe jitter, sampling stuck-resolve.
+  - Stufe 9 (2026-10-21): Chase-Vorhalt — `SEEN`-Ziel = Live-Position + Planar-
+    geschwindigkeit × 0.45 s (Distanz-Blend ab 2 m, Offset ≤ 2.2 m), der Droid
+    schneidet den Bogen ab statt hinten her zutrödeln. Callouts: eigener
+    `HEARD`/`SEEN`-Einstieg weitersagt an Droiden in 16 m (`receive_callout`,
+    Empfänger-Drohnen legen HEARD auf die Gegend ± 2 m, SEEN-Empfänger
+    ignorieren; keine Ketten). Patrol-Memory: IDLE wählt mit 40 % Chance einen
+    validierten Wegpunkt nahe der letzten Alert-Position (max 2×).
+    Regression: `tests/regression_droid_awareness.gd`.
   - Catch-reset (prototype rule): touch in `SEEN` (<1.6 m + LOS + |dy| < 2 m, 1.2 s spawn grace) shows game-over menu, fallback respawn headless.
   - Debug metrics: `get_debug_stats()` → stucks / waypoint_rejects / feeler_turns (`@export debug_log` prints resolves).
      - Navmesh (stage 2, active): `NavigationRegion3D` per level with headless-baked mesh (`assets/nav/L1_navmesh.tres` 627 polys from 275 `-col` bodies, `L2_navmesh.tres` 434 polys from 145; `tools/bake_navmesh.gd`, agent H 2.4 / R 0.6 / climb 0.3). `NavigationAgent3D` child (r 0.5 / h 2.4) drives CHASE/HEARD via `get_next_path_position()` (`use_navmesh = true` on all droids); patrol stays waypoint (`nav_steps` metric proves the split). Fallback = stage-1 behavior. Agent workflow rules: `claude.md`.

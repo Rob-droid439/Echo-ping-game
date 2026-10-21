@@ -76,6 +76,17 @@ const CATCH_DIST := 1.05
 const CATCH_H := 1.4
 const CATCH_GRACE := 1.2
 
+const LEAD_TIME := 0.45
+const LEAD_MAX := 2.2
+const LEAD_NEAR := 2.0
+const LEAD_FALLOFF := 3.0
+const RELAY_R := 16.0
+const CALLOUT_UNC := 2.0
+const CALLOUT_UNC_SEEN := 0.9
+const MEM_BIAS_P := 0.4
+const MEM_SPREAD := 4.0
+const MEM_REUSES := 2
+
 const WP_TH := 0.6
 const PAUSE_MIN := 0.12
 const PAUSE_MAX := 0.45
@@ -140,6 +151,9 @@ var _dbg_nav_steps := 0
 var _eye_nodes: Dictionary = {}
 var _eye_mats: Dictionary = {}
 var _eye_key := ""
+var _last_alert_pos := Vector3.ZERO
+var _last_alert_valid := false
+var _mem_used := 0
 
 @onready var _rig: Node3D = $Rig
 
@@ -210,6 +224,8 @@ func reset_droid() -> void:
 	_cool = 0.0
 	_scan_t = 0.0
 	_catch_grace = CATCH_GRACE
+	_last_alert_valid = false
+	_mem_used = 0
 	if _nav_agent != null:
 		_nav_agent.target_position = _spawn
 	_update_eye(true)
@@ -334,9 +350,13 @@ func _spot_player(p: Node3D) -> void:
 	_pend = false
 	_cool = 0.0
 	_hec_t = REMONITOR_INT
+	_last_alert_pos = _target
+	_last_alert_valid = true
+	_mem_used = 0
 	_sfx_alert.stream = SFX_RED
 	_sfx_alert.play()
 	_push_nav_target()
+	_relay_alert(_target, true)
 
 
 ## HEARD (Notiz): Untersuchung auf verwaschene Position; Sting nur beim
@@ -359,20 +379,89 @@ func _notice_player(p: Node3D) -> void:
 	_pend = false
 	_cool = randf_range(COOL_MIN, COOL_MAX)
 	if was_idle:
+		_last_alert_pos = _target
+		_last_alert_valid = true
+		_mem_used = 0
 		_sfx_alert.stream = SFX_YELLOW
 		_sfx_alert.play()
+		_relay_alert(_target, false)
 	_push_nav_target()
 
 
-## SEEN folgt live: Ziel gesetzt + NavPush gedrosselt.
+## SEEN folgt live mit Vorhalt (Spieler-Geschw. im Bogen antizipieren).
 func _track_player(p: Node3D, delta: float) -> void:
-	_target = Vector3(p.global_position.x, _spawn.y, p.global_position.z)
+	_target = compute_lead_target(
+		p.global_position, _player_vel(p), global_position, _spawn.y)
 	_has_target = true
 	_scan_t = 0.0
 	_nav_push_t -= delta
 	if _nav_push_t <= 0.0:
 		_nav_push_t = NAV_PUSH_INT
 		_push_nav_target()
+
+
+func _player_vel(p: Node3D) -> Vector3:
+	var v: Variant = p.get("velocity")
+	return v if v is Vector3 else Vector3.ZERO
+
+
+## Vorhalt-Ziel: Live-Position + Planargeschwindigkeit x LEAD_TIME, geblendet
+## auf Null nahe am Bot (<= LEAD_NEAR) und auf LEAD_MAX geklemmt (kein Fernduell).
+static func compute_lead_target(
+		p_pos: Vector3, p_vel: Vector3, d_pos: Vector3, ground_y: float) -> Vector3:
+	var d := p_pos - d_pos
+	d.y = 0.0
+	var dist := d.length()
+	var planar := Vector3(p_vel.x, 0.0, p_vel.z)
+	var blend := clampf((dist - LEAD_NEAR) / LEAD_FALLOFF, 0.0, 1.0)
+	if planar.length() < 0.5:
+		blend = 0.0
+	var lead := p_pos + planar * LEAD_TIME * blend
+	var off := lead - p_pos
+	off.y = 0.0
+	if off.length() > LEAD_MAX:
+		off = off.normalized() * LEAD_MAX
+		lead = p_pos + off
+	return Vector3(lead.x, ground_y, lead.z)
+
+
+## Callout: eigener HEARD/SEEN-Einstieg weitersagt an Droiden im Umkreis
+## (Empfaenger enthalten selbst nicht relayen -> keine Ketten).
+func _relay_alert(pos: Vector3, seen: bool) -> void:
+	for d in get_tree().get_nodes_in_group("echo_receiver"):
+		var n := d as Node
+		if n == self or n == null or not n.has_method("receive_callout"):
+			continue
+		var dd: Vector3 = (n as Node3D).global_position - global_position
+		dd.y = 0.0
+		if dd.length() <= RELAY_R:
+			n.call("receive_callout", pos, seen)
+
+
+## Callout-Empfang: IDLE/HEARD-Drohne untersucht grob die Gegend, SEEN ignoriert.
+func receive_callout(pos: Vector3, seen: bool) -> void:
+	if alert == Alert.SEEN:
+		return
+	var unc := CALLOUT_UNC_SEEN if seen else CALLOUT_UNC
+	alert = Alert.HEARD
+	_aggro_t = (SEEN_DUR * 0.9 if seen else lerpf(AGGRO_MIN, AGGRO_MAX, 0.35)) * randf_range(0.85, 1.1)
+	_target = Vector3(pos.x + randf_range(-unc, unc), _spawn.y, pos.z + randf_range(-unc, unc))
+	if not _nav_usable():
+		_target = _clamp_target_to_los(_target)
+	_has_target = true
+	_pause_t = 0.0
+	_strafe_t = 0.0
+	_stuck_t = 0.0
+	_scan_t = 0.0
+	_pend = false
+	_cool = randf_range(COOL_MIN, COOL_MAX)
+	_hec_t = REMONITOR_INT
+	_last_alert_pos = _target
+	_last_alert_valid = true
+	_mem_used = 0
+	_sfx_alert.stream = SFX_YELLOW
+	_sfx_alert.play()
+	_push_nav_target()
 
 
 ## Kompatibilitaets-API (Tests, 2D-Port): setzt alert direkt.
@@ -401,7 +490,11 @@ func _set_aggro(target: Vector3, dur: float, seen: bool) -> void:
 	_scan_t = 0.0
 	_hec_t = REMONITOR_INT
 	_pend = false
+	_last_alert_pos = _target
+	_last_alert_valid = true
+	_mem_used = 0
 	_push_nav_target()
+	_relay_alert(_target, seen)
 
 
 ## HEARD-Ziel an freier Luftlinie klemmen (ohne Navmesh): kein Anrennen.
@@ -449,6 +542,18 @@ func _update_speed_var(delta: float) -> void:
 
 
 func _pick_waypoint() -> void:
+	# Patrol-Memory: frisch Alert-gesehene Zonen nicht sofort aufgeben.
+	if _last_alert_valid and _mem_used < MEM_REUSES and randf() < MEM_BIAS_P:
+		var mem: Vector3 = _last_alert_pos + Vector3(
+			randf_range(-MEM_SPREAD, MEM_SPREAD), 0.0, randf_range(-MEM_SPREAD, MEM_SPREAD))
+		mem.y = _spawn.y
+		_mem_used += 1
+		if _is_waypoint_valid(mem):
+			_target = mem
+			_has_target = true
+			_pause_t = randf_range(PAUSE_MIN, PAUSE_MAX)
+			_push_nav_target()
+			return
 	# Wegpunkt-Validierung: Boden unter dem Punkt + Luftlinie frei.
 	for _try in WP_TRIES:
 		var cand: Vector3 = _spawn + Vector3(
@@ -840,6 +945,10 @@ func notice_heard_target(ox: float, oz: float, unc: float, dur: float) -> void:
 	_cool = randf_range(COOL_MIN, COOL_MAX)
 	_hec_t = REMONITOR_INT
 	if not old_heard:
+		_last_alert_pos = _target
+		_last_alert_valid = true
+		_mem_used = 0
 		_sfx_alert.stream = SFX_YELLOW
 		_sfx_alert.play()
+		_relay_alert(_target, false)
 	_push_nav_target()
