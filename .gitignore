@@ -6,3 +6,6 @@
 /tools/*
 !/tools/audit_hitbox.gd
 !/tools/audit_knee.gd
+# MCP-Editor-Cache (Screenshots/Previews des godot_mcp Addons)
+addons/godot_mcp/cache/
+
