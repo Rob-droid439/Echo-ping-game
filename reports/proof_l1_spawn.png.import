@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://byrt5aw3ohb1h"
-path="res://.godot/imported/proof_l2_exit_approach.png-e550cefa8c2065b8388bed05986ddbb9.ctex"
+uid="uid://nuhbnownvqhq"
+path="res://.godot/imported/proof_l1_spawn.png-6eb1d7efd2814de733bdc2c2981c0ed7.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://reports/proof_l2_exit_approach.png"
-dest_files=["res://.godot/imported/proof_l2_exit_approach.png-e550cefa8c2065b8388bed05986ddbb9.ctex"]
+source_file="res://reports/proof_l1_spawn.png"
+dest_files=["res://.godot/imported/proof_l1_spawn.png-6eb1d7efd2814de733bdc2c2981c0ed7.ctex"]
 
 [params]
 

@@ -44,14 +44,19 @@ InputMap-Aktionen definiert.
 - x = 42.3 … 42.0: geklemmt an `L1_Wreck_0/EchoCart_L1` bei **x = 41.9054**,
   Normale (+1, 0, 0) = Ostface.
 
-## Abnahmefotos (godot_reports)
+## Abnahmefotos (godot_reports, Stand nach ×1.4)
 
-- `reports/proof_l1_car_stop.png` — Spieler am Stop-Punkt (35.67, 33) vor der
-  Westface (Auto als dunkle Silhouette rechts Mitte).
-- `reports/proof_l1_spawn_plaza.png` — Spawn/Plaza-Übersicht.
-- `reports/proof_l1_exit.png` — ExitTrigger-Bereich L1 (81.25, 44.2).
-- `reports/proof_l2_spawn.png` — Spawn-Übersicht L2.
-- `reports/proof_l2_exit_approach.png` — Anlauf aufs ExitTrigger L2 (81.9, 110.5).
+- `reports/proof_l1_car_stop.png` — Spieler am Stop-Punkt (37.9, 35.54) vor der
+  Westface (Auto/EchoCart_L1 als dunkle Silhouette).
+- `reports/proof_l1_spawn.png` — Spawn/Plaza-Übersicht L1.
+- `reports/proof_l1_exit.png` — ExitTrigger-Bereich L1 (Spieler (82, 42),
+  Blick NE auf (87.5, 47.6)).
+- `reports/proof_l1_bollard_moved.png` — Poller mit Pink-Band nahe am Spieler,
+  neue Poller-Linie z = 32.9 (Poller-Beweisdaten: Bollard_6-Translation
+  (53.2, 0.63, 32.9), s. Abschnitt 6).
+- `reports/proof_l2_spawn.png` — Spawn-Übersicht L2 (Player 7.59, 105.27).
+- `reports/proof_l2_exit.png` — Spieler (84, 112), Blick NE aufs ExitTrigger
+  (88.2, 119).
 
 ## Kontext
 
@@ -76,3 +81,47 @@ InputMap-Aktionen definiert.
   sprint (13 PASS), m1_door (7 PASS), droid_pivot (2 PASS).
 - Beweisfoto reports/proof_l1_bollard_moved.png (Poller mit Pink-Band neben
   der Strasse, Auto-Wrack separat im Bild).
+
+## 6) Map linear ×1.4 total (2026-10-21)
+
+User-Ziel: 40 % mehr Quadratmeter in beiden Maps, Verfahren wie im
+×1.3-Pass (`map_hitbox_30_prozent_sprint_plan.md`, nach Fertigstellung
+aus dem Repo entfernt). Gewählte Umsetzung: **linear ×1.4 total**
+(Strecken ×1.4 → Fläche ×1.96), damit alle Abstände/Sperrfenster aus
+dem verifizierten ×1.3-Stand exakt mit dem Faktor 14/13 weiterrechnen.
+
+- Blender: alle Objekte beider Karten um `alt × 14/13 = 1.0769231`
+  versetzt (Pole x = 0, z = 0) — Models, `col`/`colonly`-Proxies,
+  Bänder, Lampen, FX-Helfer bleiben gemeinsam ausgerichtet. Re-Export:
+  `EchoCart_L1.glb` 20.205.916 B / 916 Nodes, `EchoCart_L2.glb`
+  15.273.392 B / 567 Nodes (Node-Mengen identisch).
+- Beweisdaten im GLB (Headless-Glättung `py glbcheck.py`):
+  `L1_Bollard_6` Translation exakt (53.2, 0.63, 32.9) bei Scale 1.4,
+  Proxy `colonly` (8.4, 0, 0) · 1.4, Bollard_5 x = 28.0, Bollard_7
+  x = 61.6 — Poller-Linie z = 32.9 (vorher 30.55).
+- Audits (`tools/audit_hitbox.gd`): L1 colliders 275 / meshes 887 /
+  unpaired 0 / P0 0 / P1 0 / Killbox-Sweep 613 Punkte, 0 illegitime
+  Blocks; L2 colliders 141 / meshes 558 / unpaired 0 / P0 0 / P1 0.
+  Berichte neu geschrieben (reports/level_*_hitbox_report.md).
+- Navmesh (`tools/bake_navmesh.gd`, agent climb 0.45): L1 972 Polys /
+  1130 Verts, L2 856 Polys / 1012 Verts, Fehler 0 (Backtrace-Warning
+  benign; Rebakes ohne Kollision-Fehler). M1-Tür-Check: Schwelle
+  ~0.42 < climb 0.45 — Tür bleibt passierbar.
+- Walkproof `tools/probe_around.gd` (Fenster ×14/13):
+  SEG-A (West-Zulauf) Stop best_x = 38.478, Fenster 38.123–38.662,
+  Westface 38.87 — PASS.
+  SEG-B (Nordflanke) frei bis x = 39.645, Schwelle 39.631 — PASS.
+  SEG-C (Ost-Zulauf) Stop min_x = 45.544, Fenster 45.231–45.877,
+  Ostface 45.13 — PASS.
+- Regressionen: sprint 14/14 PASS, m1_door 5/5 PASS (Tuer-Durchgang
+  SEEN, nav_steps 91, Distanz 1.038 m, 0 stucks), droid_pivot 2/2 PASS
+  (Pivot-Maxfehler 1.79e-7).
+- `.tscn`-Gameplay-Knoten per Formel `alt × 14/13` nachgesetzt und
+  verifiziert — L1: Player (20.583, 0.864, 34.216), ExitTrigger
+  (87.5, 2.8, 47.6), E_Droid (63.447, 0, 7.639) Roam 12.6, Sonar-Ring
+  (64.981, 0, 8.628), Powerups M1/S1/W2 (39.2, 25.2 / 14, 42 /
+  21, 14.7); L2: Player (7.590, 0.487, 105.270), ExitTrigger
+  (88.2, 2.8, 119), E_Droid_A/B (42, 95.2 / 53.2, 98) Roam 5.6/7.0,
+  RuinA/B (44.8, 82.6 / 44.8, 119), Plaza-Ruine (35, 95.2).
+- Abnahmefotos: s. Abschnitt "Abnahmefotos" oben (6 PNG nach ×1.4,
+  L1 Spawn/Stop/Poller/Exit, L2 Spawn/Exit).

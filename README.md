@@ -75,13 +75,41 @@ player.gd-Bewegungslogik, `reports/probe_evidence.md`):
 - Korridor-Raster 33.0–36.5: frei bis zur Westface, kein anderer Blocker.
 
 Abnahmefotos: `reports/proof_l1_car_stop.png`, `proof_l1_bollard_moved.png`,
-`proof_l1_spawn_plaza.png`, `proof_l1_exit.png`, `proof_l2_spawn.png`,
-`proof_l2_exit_approach.png`.
+`proof_l1_spawn.png`, `proof_l1_exit.png`, `proof_l2_spawn.png`,
+`proof_l2_exit.png`.
 
 Nach-Justage (2026-10-21): Der Poller `L1_Bollard_6` (inkl. Band + `colonly`)
 hielt sich in den Nordflanken-Laufweg zum Auto (+7.8 X versetzt, 41.6 → 49.4,
 auf der Poller-Linie y = 30.55). Navmesh L1 neu gebacken (885 Polys), Audit
 weiterhin 0 P0/0 P1, Walkproof A/B/C weiter PASS.
+
+## Map linear ×1.4 total — 40 % mehr Fläche (2026-10-21)
+
+Beide Karten linear auf **×1.4 total** skaliert (Strecken ×1.4 → Fläche
+×1.96), nach dem bewährten Verfahren aus dem ×1.3-Pass: Upload-Objekte in
+der `.blend` per Formel `alt × 14/13` versetzt, GLB-Exporte neu, Godot-
+Reimport, Audits, Navmesh-Rebake, Gameplay-Knoten in `.tscn` nachgezogen
+(Player, ExitTrigger, Droiden, Powerups, Sonar-Ring).
+
+- GLBs: `EchoCart_L1.glb` 20.205.916 B / 916 Nodes, `EchoCart_L2.glb`
+  15.273.392 B / 567 Nodes (Node-Mengen identisch; `L1_Bollard_6`
+  Translation exakt (53.2, 0.63, 32.9) bei Scale 1.4).
+- Audits: beide 0 P0 / 0 P1 / unpaired=0 (L1 colliders 275, meshes 887,
+  Killbox-Sweep 613 Punkte / 0 illegitime Blocks; L2 colliders 141,
+  meshes 558). Navmesh: L1 972 Polys / 1130 Verts, L2 856 Polys /
+  1012 Verts (agent climb 0.45; M1-Tür passierbar, Schwelle 0.42).
+- Walkproof (`tools/probe_around.gd`, Fenster ×14/13): West-Stop 38.478
+  (Fenster 38.123–38.662), Nordflanke frei bis 39.645 (Schwelle 39.631),
+  Ost-Stop 45.544 (Fenster 45.231–45.877) — PASS. Regressionen: sprint
+  14 PASS, m1_door 5 PASS (Tür-Durchgang SEEN, 0 stucks), droid_pivot
+  2 PASS (Pivot-Maxfehler 1.8e-7). Details: `reports/probe_evidence.md`
+  Abschnitt 6 (Walkproof) und Abnahmefotos.
+- Abnahmefotos: `reports/proof_l1_spawn.png`, `proof_l1_car_stop.png`
+  (Spieler am Stop-Punkt (37.9, 35.54) vor der Westface 38.87),
+  `proof_l1_bollard_moved.png` (Poller mit Pink-Band auf der neuen
+  Poller-Linie z = 32.9), `proof_l1_exit.png`, `proof_l2_spawn.png`,
+  `proof_l2_exit.png` (Spieler (84, 112), Blick NE aufs ExitTrigger
+  (88.2, 119)).
 
 ## Collision (Blender → Godot)
 
