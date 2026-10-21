@@ -62,3 +62,17 @@ InputMap-Aktionen definiert.
   (nur Index/Winding geändert; `L1_Volume`-Fog-Helper aus dem Exportbaum in
   die Root-Collection `FX_Volumes` verschoben, damit er als Principled-Volume
   nicht als opakes Box-Mesh landet).
+
+## 5) Poller L1_Bollard_6 versetzt (2026-10-21)
+
+- User-Befund: der Poller stand mitten im Nordflanken-Laufweg zum Auto
+  ((41.6, 30.55) liegt direkt im Korridor zwischen Plaza und Ost-Zulauf).
+- Fix in der .blend: Bollard_6 + BollardBand_6 + Bollard_6-colonly um +7.8 X
+  nach (49.4, 30.55) versetzt (auf der Poller-Linie, Freiflache gepruft).
+- Nach-Justage verifiziert: Re-Export L1 (20.208.252 B, 916 Nodes), Audit
+  colliders=275 / meshes=887 / unpaired=0 / P0=0 / P1=0 / Killbox 613 / 0,
+  Navmesh-Rebake 885 Polys / 1018 Verts, probe_around A=true B=true C=true
+  (STOP 35.672 / frei 36.839 / STOP 42.319 unveraendert), Regressionen
+  sprint (13 PASS), m1_door (7 PASS), droid_pivot (2 PASS).
+- Beweisfoto reports/proof_l1_bollard_moved.png (Poller mit Pink-Band neben
+  der Strasse, Auto-Wrack separat im Bild).

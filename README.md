@@ -74,8 +74,14 @@ player.gd-Bewegungslogik, `reports/probe_evidence.md`):
 - Ost-Zulauf: Stop bei x = 42.319 (Ostface 41.905).
 - Korridor-Raster 33.0–36.5: frei bis zur Westface, kein anderer Blocker.
 
-Abnahmefotos: `reports/proof_l1_car_stop.png`, `proof_l1_spawn_plaza.png`,
-`proof_l1_exit.png`, `proof_l2_spawn.png`, `proof_l2_exit_approach.png`.
+Abnahmefotos: `reports/proof_l1_car_stop.png`, `proof_l1_bollard_moved.png`,
+`proof_l1_spawn_plaza.png`, `proof_l1_exit.png`, `proof_l2_spawn.png`,
+`proof_l2_exit_approach.png`.
+
+Nach-Justage (2026-10-21): Der Poller `L1_Bollard_6` (inkl. Band + `colonly`)
+hielt sich in den Nordflanken-Laufweg zum Auto (+7.8 X versetzt, 41.6 → 49.4,
+auf der Poller-Linie y = 30.55). Navmesh L1 neu gebacken (885 Polys), Audit
+weiterhin 0 P0/0 P1, Walkproof A/B/C weiter PASS.
 
 ## Collision (Blender → Godot)
 
