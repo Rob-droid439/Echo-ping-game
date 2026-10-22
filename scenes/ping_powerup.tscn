@@ -1,16 +1,18 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scenes/ping_powerup.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/sprites/powerup_icon.png" id="2"]
 
-[sub_resource type="StandardMaterial3D" id="mat"]
-albedo_color = Color(0.45, 1, 0.3, 1)
-emission_enabled = true
-emission = Color(0.45, 1, 0.3, 1)
-emission_energy_multiplier = 3.0
+[sub_resource type="StandardMaterial3D" id="icon"]
+transparency = 1
+shading_mode = 0
+billboard_keep_scale = true
+albedo_texture = ExtResource("2")
+billboard_mode = 2
 
-[sub_resource type="BoxMesh" id="dia"]
-material = SubResource("mat")
-size = Vector3(0.28, 0.42, 0.28)
+[sub_resource type="QuadMesh" id="badge"]
+material = SubResource("icon")
+size = Vector2(1.0, 1.0)
 
 [sub_resource type="SphereShape3D" id="col"]
 radius = 0.7
@@ -23,8 +25,13 @@ script = ExtResource("1")
 [node name="Diamond" type="MeshInstance3D" parent="."]
 cast_shadow = 0
 position = Vector3(0, 0.9, 0)
-rotation = Vector3(0, 0.78, 0)
-mesh = SubResource("dia")
+mesh = SubResource("badge")
+
+[node name="Glow" type="OmniLight3D" parent="."]
+position = Vector3(0, 1.0, 0)
+omni_range = 4.5
+light_color = Color(0.55, 0.15, 0.8, 1)
+light_energy = 1.1
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 position = Vector3(0, 0.6, 0)
