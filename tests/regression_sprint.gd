@@ -39,6 +39,11 @@ func _initialize() -> void:
 
 func _physics_process(_d: float) -> bool:
 	_f += 1
+	if _f == 3:
+		# Spawn-unabhaengig: feste Test-Linie (main street z=33, Blick +X,
+		# Probe: 23->35.3 frei, Crash-Marke 35.7).
+		_player.global_position = Vector3(23.0, 0.8026, 33.0)
+		_player.rotation = Vector3(0.0, -1.5708, 0.0)
 	if _f == 5:
 		_w.pressed = true
 		Input.parse_input_event(_w)

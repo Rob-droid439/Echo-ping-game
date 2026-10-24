@@ -35,7 +35,7 @@ roam_radius = 11.7
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60.3399472, 0, 8.0048709)
 
 [node name="Player" parent="." unique_id=2047181400 instance=ExtResource("6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.1128769, 0.802591699, 31.7717946)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0.802591699, 33)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=313288506]
 environment = ExtResource("7")
