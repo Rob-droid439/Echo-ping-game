@@ -48,15 +48,16 @@ InputMap-Aktionen definiert.
 
 - `reports/proof_l1_car_stop.png` — Spieler am Stop-Punkt (35.67, 33) vor der
   Westface 36.095 (Auto/Wracks als dunkle Silhouette vorn links).
-- `reports/proof_l1_spawn.png` — Spawn/Plaza-Übersicht L1.
+- `reports/proof_l1_spawn.png` — Spawn-Blick L1 ab Anbau-Westkante
+  `(-30, 0.8026, 33)` Richtung Exit, yaw −1.67 (Stufe 10b).
 - `reports/proof_l1_exit.png` — Spieler (58, 33), Blick SE aufs ExitTrigger
   (81.25, 44.2).
 - `reports/proof_l1_bollard_ping.png` — Bollard (Poller-Linie z = 30.55) mit
   Pink-Band leuchtend direkt neben dem Spieler nach `cast_ping`.
 - `reports/proof_l1_annex.png` — Spieler (5, 33), Blick nach Westen in den
   neuen Anbau-Streifen.
-- `reports/proof_l2_spawn.png` — Spawn-Übersicht L2 (Player 7.045, 0.452,
-  97.751).
+- `reports/proof_l2_spawn.png` — Spawn-Blick L2 ab Westplateau
+  `(-20, 0.4523, 85)` Richtung Exit, yaw −1.817 (Stufe 10b).
 - `reports/proof_l2_exit.png` — Spieler (58, 100), Blick SE aufs ExitTrigger
   (81.9, 110.5).
 - `reports/proof_l2_annex.png` — Spieler (5, 88), Blick nach Westen in den
@@ -128,3 +129,28 @@ dem verifizierten ×1.3-Stand (`scenes/level_*.tscn` +
   (Loader fällt auf Pfad zurück).
 - Abnahmefotos: s. Abschnitt "Abnahmefotos" oben (8 PNG: L1
   Spawn/Stop/Poller-Ping/Exit/Anbau, L2 Spawn/Exit/Anbau).
+
+## 7) Spawn-Abstand maximiert (Stufe 10b, 2026-10-24)
+
+Ziel: Spawn so weit wie möglich vom Exit (beide Maps). Kandidaten-Sweep
+mit `tools/spawn_probe_v2.gd` (Multi-Segment Boden-Rays bis 3 Hits +
+8-Richtungs-Freiheits-Rays, Relativ-Kriterium zum Alt-Spawn-Level),
+Bewertung gegen Exits L1 (81.25, 44.2) / L2 (81.9, 110.5):
+
+- **L1** neu `(-30, 0.8026, 33)` (Anbau-Westkante, Boden-Hit auf
+  Anbauplatte) → Exit-Distanz **111,8 m** (Alt-Spawn (19.1, 31.8):
+  63,4 m). Blick Richtung Exit yaw −1.67.
+- **L2** neu `(-20, 0.4523, 85)` (Westplateau, begehbares Band
+  z ≈ 74..119 bei Boden Y = 0) → Exit-Distanz **105,0 m**
+  (Alt-Spawn (7.0, 97.8): 75,9 m). Blick Richtung Exit yaw −1.817.
+- Droiden-Spawns/Roams unverändert; Player-Transforms nur als
+  Text-Edit bei geschlossenen Editor-Tabs (lvl Sizes ~3 KB unverändert).
+- **Nebenwirkung abgefangen:** `tests/regression_sprint.gd` lief vorher
+  in Spawn-Blickrichtung und wäre in die Blockzone x ≈ 35.7 (Main
+  Street, z = 33) gefahren. Fix: Frame 3 setzt Spieler fest auf
+  `(23, 0.8026, 33)`, yaw −1.5708 (+X) → Test spawn-unabhängig,
+  Lane 23→35.3 bewiesen frei (`tools/lane_probe.gd`).
+- Regressionen gegen die neuen Spawns: sprint 14/14 PASS,
+  m1_door OK, droid_awareness 6× PASS, droid_pivot OK.
+- Beweisfotos: `reports/proof_l1_spawn.png`, `reports/proof_l2_spawn.png`
+  (Steps oben ersetzt; Fotos ersetzt durch neue Spawns).

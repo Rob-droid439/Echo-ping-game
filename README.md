@@ -122,6 +122,26 @@ getauscht worden.
   `proof_l1_exit.png`, `proof_l1_annex.png` (Blick nach Westen in den
   Anbau), `proof_l2_spawn.png`, `proof_l2_exit.png`, `proof_l2_annex.png`.
 
+## Spawn-Abstand maximiert — Stufe 10b (2026-10-24)
+
+Player-Spawns beider Level maximal weit vom Exit gerückt:
+
+- **L1**: Playerspawn `(-30, 0.8026, 33)` an der Anbau-Westkante —
+  Spawn→Exit-Distanz **111,8 m** (vorher 63,4 m auf der Plaza).
+- **L2**: Playerspawn `(-20, 0.4523, 85)` auf dem Westplateau
+  (begehbares Band z ≈ 74..119, Boden Y = 0) — Spawn→Exit-Distanz
+  **105,0 m** (vorher 75,9 m). Droiden-Spawns unverändert.
+- Abnahmefotos: `reports/proof_l1_spawn.png` (Anbau-Westkante, Blick
+  Richtung Exit, yaw −1.67), `reports/proof_l2_spawn.png`
+  (Westplateau, Blick Richtung Exit, yaw −1.817).
+- `tests/regression_sprint.gd` ist damit spawn-unabhängig: Frame 3 setzt
+  den Spieler fest auf die Test-Linie `(23, 0.8026, 33)`, Rotation.y
+  −1.5708 (Blick +X, Main Street z = 33) — Lane frei 23→35.3 bewiesen
+  (Block-Marke 35.7). weiterhin **14× PASS**.
+- Spawn-Kandidaten-Sweep als wiederverwendbarer Probe hinterlegt:
+  `tools/spawn_probe_v2.gd` (Boden-Rays + 8-Richtungs-Freiheits-Scan per
+  Level über User-Args), Lane-Trace: `tools/lane_probe.gd`.
+
 ## Collision (Blender → Godot)
 
 Naming in Blender drives the glTF import, no manual work in Godot:
