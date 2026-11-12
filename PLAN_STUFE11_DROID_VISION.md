@@ -46,8 +46,13 @@ bleibt unverändert bestehen und füttert SUSPICIOUS.
     - `dist_factor`: 1.0 bei d ≤ 10 m, linear fallend auf ~0.25 bei 30 m,
       danach Tail 30→40 m auf 0 (identisch zur Visual-Fade-Kurve).
     - `angle_factor`: cos²(Abweichung) — Rand des Kegels füllt langsamer.
-    - `exposure`: 1.0 default; Kopf sichtbar +0.25 (Blacklist-Knochen-Logik
-      reduziert auf 2 Samples; Stance/Motion-Extras → Stufe 12, NICHT hier).
+    - `exposure` (User-Entscheid 2026-11-12, „ganz leicht"): Standlicht-Bonus
+      `1 + LIGHT_BONUS_MAX (0.08) × (1 − offangle/θ)` nur bei bestehendem LOS
+      — Strahlmitte +8 % Fill-Rate, Kegelrand +0 %. **Null Zusatzkosten:**
+      nutzt ausschließlich den bereits berechneten Dot-Wert (kein zusätzliches
+      Licht-Sampling, keine Shadow-Abfragen; „im Strahl“ ≙ sichtbar-im-Kegel,
+      deshalb ist die BELIEBTUNG schon die Sichtbarkeitsrechnung selbst).
+      Stance/Motion-Extras → Stufe 12, NICHT hier.
   - unsichtbar: `dA/dt = −0.3/s` (Paper-Decay).
 - **Schwellen** (Shadow-Protocol-Paper): `A ≥ 0.4` → SUSPICIOUS (investigiert
   LKP/letzte Sichtposition, wie HEARD heute); `A ≥ 1.0` → SEEN/CHASE.
@@ -75,10 +80,13 @@ SIGHT_MAX) — Visual und Perception können nie auseinanderlaufen.
   Far-Fade `smoothstep(30, 40, d)` **mit denselben Werten wie dist_factor**,
   Depth-Contact-Fade via DEPTH_TEXTURE, Kanten-Feather via N·V. Kein Dust,
   kein Neon — „subtle, normal light“ (User-Vorgabe).
-- **Lesbarkeits-Kopplung (GMTK-Prinzip)**: Beam-Farbe koppelt an
-  Awareness-State: IDLE kaltweiß → SUSPICIOUS amber → SEEN rot. Optional
-  HUD-„Aufdeck-Balken“, wenn ein Droid-Meter > 0 und der Spieler im Kegel
-  ist (Stufe-11b-Kandidat, erst wenn Basissystem steht).
+- **Lesbarkeits-Kopplung (GMTK-Prinzip), User-Entscheid: SEHR SUBTIL** —
+  kein Farbsprung, sondern sanfter Tint-Lerp am geteilten Farb-Export:
+  IDLE kaltweiß (0.82, 0.88, 1.0) → SUSPICIOUS leicht Richtung amber
+  (0.92, 0.86, 0.72) → SEEN leicht Richtung rot (1.0, 0.78, 0.72); Beam-
+  Emission bleibt konstant niedrig, SpotLight-Tint zieht mit (eine Quelle:
+  `@export var beam_tint_idle/susp/seen` an droid_ai.gd, Lerp über ~1 s).
+  Kein HUD-Balken (User: nein — Stufe 11b entfällt).
 
 ## 5) Datei-für-Datei
 
@@ -88,14 +96,15 @@ SIGHT_MAX) — Visual und Perception können nie auseinanderlaufen.
   **nur als Text-Edit bei geschlossenen Editor-Tabs** (SCENE SAFETY,
   claude.md; Dateigröße danach prüfen — e_droid.tscn ist klein).
 - `assets/shaders/droid_beam.gdshader`: neu (ein File, ~80 Zeilen).
-- `sonar_hud.tscn/gd`: unverändert in Stufe 11a; HUD-Balken = 11b.
+- `sonar_hud.tscn/gd`: unverändert (User: kein Awareness-Balken).
 
 ## 6) Tests / Abnahme
 
 - `tests/regression_droid_awareness.gd` erweitern (6 → ~10 PASS):
   Kegelrand ±1.8 m bei 10 m (in/out), Fade 30→40 m (Meter-Rate → 0),
   Hysterese 40/52, AutoSuccess um LKP, SUSPICIOUS-Einstieg bei Meter 0.4,
-  Callout-Ketten unverändert.
+  Callout-Ketten unverändert, Lichtbonus: Fill Strahlmitte vs Kegelrand
+  Δ ≈ +8 % (± Toleranz), Tint-Lerp erreicht Ziel-Farbe ~1 s nach State-Wechsel.
 - Bestand müssen weiter laufen: verify_stufe1 (13 PASS — vision-Expectation
   an neue Geometrie anpassen), m1_door (Tür-SEEN via Navmesh), sprint,
   droid_pivot.
@@ -124,14 +133,15 @@ SIGHT_MAX) — Visual und Perception können nie auseinanderlaufen.
   kein „Punkt-Strahl“ am Kopf klebt (Baltor-Limit: „seen from inside looks
   flat“ — Apex-Aussparung mildert).
 
-## 9) Offene Fragen (User)
+## 9) Entscheidungen (User, 2026-11-12) — final
 
-1. Farbkopplung weiß→amber→rot am Beam: ja/nein? (Vorschlag: ja — gratis
-   Lesbarkeit, GMTK-Prinzip.)
-2. HUD-„Du wirst gesehen“-Balken: Stufe 11b oder später?
-3. Soll der Spieler im Strahl-Standlicht heller beleuchtet wirken
-   (Detection-Bonus bei beleuchtetem Player) → Stufe 12 (Lichtlevel-Modell,
-   Thief/Dishonored-Stil) oder nie?
+1. **Farbkopplung: JA, sehr subtil** → Tint-Lerp (§4), kein Farbsprung.
+2. **HUD-Balken: NEIN** → §5 angepasst, Stufe 11b entfällt.
+3. **Lichtlevel-Modell: JA, aber leicht & nur wenn billig** → Implementiert
+   als Standlicht-Bonus +8 % Fill-Rate in Strahlmitte, linear auf 0 am
+   Kegelrand (§3 `exposure`) — null zusätzliche Queries, weil „im Strahl“
+   exakt die bereits berechnete Sichtbarkeitsbedingung ist und der Dot-Wert
+   schon vorliegt. Teureres Thief/Dishonored-Lichtlevel (echtes Licht-
+   Sampling am Player) bleibt bewusst UNGEBAUT.
 
-— Umsetzung erst nach Freigabe dieses Plans; dann Datei-für-Datei, Tests,
-c p „Stufe 11“.
+— Umsetzung nach diesem Plan: Datei-für-Datei, Tests, c p „Stufe 11“.
