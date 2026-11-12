@@ -154,3 +154,16 @@ Bewertung gegen Exits L1 (81.25, 44.2) / L2 (81.9, 110.5):
   m1_door OK, droid_awareness 6× PASS, droid_pivot OK.
 - Beweisfotos: `reports/proof_l1_spawn.png`, `reports/proof_l2_spawn.png`
   (Steps oben ersetzt; Fotos ersetzt durch neue Spawns).
+
+## 8) Stufe 10a: Powerup-Icon (2026-10-24, Abnahme 2026-11-12)
+
+- Pickup-Optik: Quad-Badge 1×1 mit `assets/sprites/powerup_icon.png`
+  ( Quelle: 2D-Original `IT Projekt Robert Schmauz Cartograph/src/assets/
+  Powerups/a8f7d90e-…-05f95e249ff6.png`), dazu OmniLight „Glow";
+  Bob-Animation unverändert via `$Diamond` (`scenes/ping_powerup.gd`).
+- Foto: `reports/proof_powerup_icon.png` — Übersichtsaufnahme, KEIN
+  Badge-Close-up (Verifizierung im Commit-Text `7b7723e` behauptet,
+  im Bild nicht nachweisbar — bewusst als Caveat geführt).
+- **Abnahme 2026-11-12 (User): „Powerup symbol is great"** → Caveat
+  geschlossen; Close-up-Nachweis nicht mehr erforderlich. Sonstige
+  Evidenz: Icon-Diff gegen Quelle, Compat mit `run_state.gd`-Stacks.

@@ -23,6 +23,7 @@ Stand: lauffähiger Gameplay-Prototyp, kein Content-Lock.
   - Reveal through walls (X-ray): everything in group `echo_receiver` hit by the wavefront gets a `PingMarker` + `E_Anim_Alert` + HUD contact.
   - Droids hear the ping (see AI below) via group `active_ping` + `get_radius()`.
 - Ping powerups (port from 2D/Java `PowerUp.java` + `PingManager`): green diamonds, max 7 stacks run-wide (`run_state.gd`, survives scene change), each +7.5 % radius / +15 % speed. HUD shows `PING +n/7`.
+  - Stufe 10a: Pickup zeigt das 2D-Original-Icon als Quad-Badge (1×1, `assets/sprites/powerup_icon.png`, OmniLight „Glow") statt schlichter Box — User-Abnahme 2026-11-12: Symbol gut (Nachweis: `reports/probe_evidence.md` §8).
   - Level 1: 3 pickups, Level 2: 3 pickups.
 - Droid AI (port from Java `EnemyAI` + `HearingModel` + `Enemy`, `scenes/droid_ai.gd` / `e_droid.tscn`):
   - Patrol: random waypoints in per-droid roam radius (`@export roam_radius`: L1 9 m open plaza, L2-A 4 m / L2-B 5 m tight slots) + pause, speed 3.5 m/s with variance. Rig-pivot achszentriert (Zentrier-Offset in `Rig/Model`-Kind, Yaw starr um Körperachse — vorher schwenkte das Mesh bis ~6 m und wirkte wie Teleport-Springen).
