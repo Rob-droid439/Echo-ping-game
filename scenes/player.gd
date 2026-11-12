@@ -10,6 +10,12 @@ extends CharacterBody3D
 @export var sprint_mult: float = 1.5
 @export var sprint_fov_kick: float = 8.0
 @export var sprint_lean: float = 0.14
+@export var bob_amp_walk: float = 0.028
+@export var bob_amp_sprint: float = 0.05
+@export var bob_stride_len: float = 2.2
+@export var foot_db_walk: float = -12.0
+@export var foot_db_sprint: float = -8.0
+@export var foot_pitch_bonus: float = 0.3
 @export var accel: float = 20.0
 @export var jump_velocity: float = 4.5
 @export var mouse_sens: float = 0.0025
@@ -30,6 +36,7 @@ const BLOWBACK_HAND: float = 0.08
 const BLOWBACK_ARM: float = 0.04
 const SFX_PING: AudioStream = preload("res://assets/audio/Ping.wav")
 const SFX_DENIED: AudioStream = preload("res://assets/audio/PingNotReady.wav")
+const SFX_WALK: AudioStream = preload("res://assets/audio/Walking_Idle.wav")
 
 @onready var _rig: Node3D = $Rig
 @onready var _arm: SpringArm3D = $CamArm
@@ -37,6 +44,9 @@ const SFX_DENIED: AudioStream = preload("res://assets/audio/PingNotReady.wav")
 var _ap: AnimationPlayer
 var _sfx_ping: AudioStreamPlayer
 var _sfx_denied: AudioStreamPlayer
+var _sfx_walk: AudioStreamPlayer
+var _cam_base_h: float = 0.0
+var _bob_phase: float = 0.0
 var _pitch: float = -0.18
 var _ping_left: float = 0.0
 var _sprinting: bool = false
@@ -79,6 +89,17 @@ func _ready() -> void:
 		_bone_forearm = _skel.find_bone("Forearm_R")
 	_arm.spring_length = cam_arm_length
 	_arm.rotation.x = _pitch
+	_cam_base_h = _cam.h_offset
+	# Schritt-Sound: Duplikat des Streams bekommt eigene Loop-Settings,
+	# der geteilte Import bleibt unberuehrt. Lautstaerke bewusst low.
+	var walk_stream := (SFX_WALK as AudioStreamWAV).duplicate() as AudioStreamWAV
+	walk_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+	walk_stream.loop_begin = 0
+	walk_stream.loop_end = int(walk_stream.get_length() * walk_stream.mix_rate)
+	_sfx_walk = AudioStreamPlayer.new()
+	_sfx_walk.stream = walk_stream
+	_sfx_walk.volume_db = foot_db_walk
+	add_child(_sfx_walk)
 	_sfx_ping = AudioStreamPlayer.new()
 	_sfx_ping.stream = SFX_PING
 	add_child(_sfx_ping)
@@ -110,6 +131,9 @@ func respawn() -> void:
 	_clear_blowback()
 	_pitch = -0.18
 	_arm.rotation = Vector3(_pitch, 0.0, 0.0)
+	if _sfx_walk != null and _sfx_walk.playing:
+		_sfx_walk.stop()
+	_bob_phase = 0.0
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -199,6 +223,7 @@ func _physics_process(delta: float) -> void:
 	else:
 		velocity.y = minf(velocity.y, 0.0)
 	move_and_slide()
+	_update_feel(delta)
 	# Kamera: Arm ein-/ausfahren lassen, bei Wandnaehe Kopf ausblenden
 	# statt Kamera in den Schaedel zu fahren (First-Person-Fallback).
 	if _arm != null and _rig != null:
@@ -275,3 +300,39 @@ func _update_anim(delta: float) -> void:
 		# Sonst steht das Mesh bei gedrehter Kamera (Body-Yaw != 0) schief.
 		var target_world := atan2(-flat.x, -flat.z) + rig_yaw_offset
 		_rig.rotation.y = lerp_angle(_rig.rotation.y, target_world - rotation.y, turn_speed * delta)
+
+
+## Schritt-Gefuehl (Stufe 10c): Schritt-Loop (Walking_Idle) nur am
+## Boden bei Bewegung, Pitch/Lautstaerke am Tempo, plus Kamera-Bob und
+## leichtes seitliches Schwanken — pro Bob-Zyklus 2 Schritte (Dips).
+## Alles diskret sanft (lerp), damit Sprint-Ein-/Ausstieg nicht ruckt.
+func _update_feel(delta: float) -> void:
+	if _cam == null or _sfx_walk == null:
+		return
+	var planar := Vector2(velocity.x, velocity.z).length()
+	var moving := is_on_floor() and planar > 0.5
+	var sprinting_now: bool = _sprinting and planar > 0.5
+	var walk_speed := _target_speed(false)
+	var sprint_speed := _target_speed(true)
+	var t := clampf((planar - walk_speed) / maxf(sprint_speed - walk_speed, 0.001), 0.0, 1.0)
+	if moving:
+		# Bob-Phase am Planartempo: volle Zyklik alle bob_stride_len Meter,
+		# Dips = Schritte (2 pro Zyklus), Amplitude sprinttaeglich tiefer.
+		_bob_phase = fmod(_bob_phase + planar / bob_stride_len * delta, 1.0)
+		var dip := absf(sin(_bob_phase * PI * 2.0))
+		var amp := (bob_amp_sprint if sprinting_now else bob_amp_walk)
+		_cam.v_offset = lerpf(_cam.v_offset, -dip * amp, 10.0 * delta)
+		_cam.h_offset = lerpf(_cam.h_offset,
+			_cam_base_h + cos(_bob_phase * PI * 2.0) * 0.02 * (1.0 if sprinting_now else 0.6),
+			10.0 * delta)
+		# Schritte: Loop nur im Laufen; Sprint hoert sich schneller an.
+		if not _sfx_walk.playing:
+			_sfx_walk.play()
+		_sfx_walk.pitch_scale = 1.0 + foot_pitch_bonus * t
+		_sfx_walk.volume_db = lerpf(foot_db_walk, foot_db_sprint, t)
+	else:
+		_bob_phase = 0.0
+		_cam.v_offset = lerpf(_cam.v_offset, 0.0, 8.0 * delta)
+		_cam.h_offset = lerpf(_cam.h_offset, _cam_base_h, 8.0 * delta)
+		if _sfx_walk.playing:
+			_sfx_walk.stop()
