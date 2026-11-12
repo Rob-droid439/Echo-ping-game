@@ -10,6 +10,10 @@ extends CharacterBody3D
 @export var sprint_mult: float = 1.5
 @export var sprint_fov_kick: float = 8.0
 @export var sprint_lean: float = 0.14
+@export var sprint_anim_blend_time: float = 0.18
+@export var sprint_start_speed: float = 0.5
+@export var sprint_stop_speed: float = 0.35
+@export var sprint_body_sway: float = 0.018
 @export var bob_amp_walk: float = 0.028
 @export var bob_amp_sprint: float = 0.05
 @export var bob_stride_len: float = 2.2
@@ -51,6 +55,9 @@ var _pitch: float = -0.18
 var _ping_left: float = 0.0
 var _sprinting: bool = false
 var _base_fov: float = 70.0
+var _sprint_anim_blend: float = 0.0
+var _anim_rate: float = 1.0
+var _run_sway_phase: float = 0.0
 var _blowback_t: float = 0.0
 var _skel: Skeleton3D
 var _bone_hand: int = -1
@@ -134,6 +141,9 @@ func respawn() -> void:
 	if _sfx_walk != null and _sfx_walk.playing:
 		_sfx_walk.stop()
 	_bob_phase = 0.0
+	_sprint_anim_blend = 0.0
+	_anim_rate = 1.0
+	_run_sway_phase = 0.0
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -278,22 +288,37 @@ func _update_anim(delta: float) -> void:
 	if not is_on_floor():
 		return
 	var planar := Vector2(velocity.x, velocity.z).length()
-	var sprinting_now: bool = _sprinting and planar > 0.5
+	# Keep a little hysteresis at the movement threshold. This prevents a
+	# sprint clip/lean flicker when acceleration briefly dips below 0.5 m/s.
+	var sprinting_now: bool = _sprinting and planar > sprint_start_speed
+	if _sprint_anim_blend > 0.01 and _sprinting and planar > sprint_stop_speed:
+		sprinting_now = true
+	var sprint_target := 1.0 if sprinting_now else 0.0
+	_sprint_anim_blend = move_toward(
+		_sprint_anim_blend, sprint_target,
+		delta / maxf(sprint_anim_blend_time, 0.001))
 	var want := &"D_Anim_Idle"
 	var rate := 1.0
 	if planar > 0.5:
-		if sprinting_now and _ap.has_animation("D_Anim_Sprint"):
+		if _sprint_anim_blend > 0.5 and _ap.has_animation("D_Anim_Sprint"):
 			want = &"D_Anim_Sprint"
-			rate = 1.0 # Clip nativ fuer Sprint-Tempo (7,5 m/s) gebaut
+			# The authored sprint cycle is for 7.5 m/s. Ramp its playback rate
+			# with real velocity so the first stride does not pop or foot-slide.
+			rate = clampf(planar / maxf(_target_speed(true), 0.001), 0.72, 1.08)
 		else:
 			want = &"D_Anim_Walk"
-			rate = walk_mult # Clip fuer 5,0 m/s -> 0,7 gegen Foot-Slide
+			rate = walk_mult
 	if _ap.current_animation != want:
-		_ap.play(want, 0.2)
-	_ap.speed_scale = rate
-	# Sprint-Feeling: FOV-Kick + Vorneige, weich rein/raus.
-	_cam.fov = lerpf(_cam.fov, _base_fov + (sprint_fov_kick if sprinting_now else 0.0), 6.0 * delta)
-	_rig.rotation.x = lerpf(_rig.rotation.x, (-sprint_lean if sprinting_now else 0.0), 6.0 * delta)
+		_ap.play(want, sprint_anim_blend_time)
+	_anim_rate = lerpf(_anim_rate, rate, clampf(delta * 12.0, 0.0, 1.0))
+	_ap.speed_scale = _anim_rate
+	# Sprint-Feeling follows the same blend as the animation, not the key
+	# state. Camera and body therefore settle on the same visual timing.
+	_cam.fov = lerpf(_cam.fov, _base_fov + sprint_fov_kick * _sprint_anim_blend, 7.0 * delta)
+	_rig.rotation.x = lerpf(_rig.rotation.x, -sprint_lean * _sprint_anim_blend, 8.0 * delta)
+	_run_sway_phase = fmod(_run_sway_phase + planar * delta * 1.35, TAU)
+	var sway := sin(_run_sway_phase) * sprint_body_sway * _sprint_anim_blend
+	_rig.rotation.z = lerpf(_rig.rotation.z, sway, 8.0 * delta)
 	var flat := Vector3(velocity.x, 0.0, velocity.z)
 	if flat.length() > 0.5:
 		# Rig ist Kind des Bodies: Welt-Yaw in Body-lokal umrechnen.

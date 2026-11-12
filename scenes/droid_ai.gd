@@ -1,4 +1,4 @@
-﻿extends CharacterBody3D
+extends CharacterBody3D
 ## Droiden-KI v2 (2026-10-18, kompletter Rebuild):
 ##   Vision mit Aufbau (Heat 0..1): 28-Grad-Kernkegel + 60-Grad-Peripherie,
 ##   Distanz- und Move-Faktor. heat 0.4 -> HEARD (Neugier: untersucht mit
@@ -13,7 +13,8 @@
 ## authored X 1.2..2.2 / Y 0.53..1.47 / Z +-0.37).
 ## Tests: regression_droid_pivot, regression_m1_door (API bleibt).
 
-enum Alert { IDLE, HEARD, SEEN }
+enum Alert { IDLE, SUSPICIOUS, SEEN, SEARCH }
+const HEARD := Alert.SUSPICIOUS
 
 const PATROL_SPEED := 3.5
 const AGGRO_SPEED := 4.6
@@ -24,13 +25,22 @@ const SVAR_AGGRO_MAX := 1.25
 const SVAR_INT_MIN := 0.2
 const SVAR_INT_MAX := 0.65
 
-const VISION_RANGE := 9.0
-const VISION_DOT := 0.8829
-const VISION_DOT_WIDE := 0.5
-const WIDE_F := 0.4
+@export_category("Droid vision")
+@export var sight_max := 40.0
+@export var lose_sight_radius := 52.0
+@export var auto_success_range := 6.0
+@export var half_angle_deg := 10.2
+@export var fill_base := 2.2
+@export var meter_decay := 0.3
+@export var light_bonus_max := 0.08
+@export var fade_start := 30.0
+@export var fade_end := 40.0
+@export var beam_tint_idle := Color(0.82, 0.88, 1.0)
+@export var beam_tint_suspicious := Color(0.92, 0.86, 0.72)
+@export var beam_tint_seen := Color(1.0, 0.78, 0.72)
+const VISION_RANGE := 40.0
+const VISION_DOT := 0.9842
 const OMNI_R := 1.6
-const VISION_GAIN := 2.6
-const VISION_COOL := 0.5
 const HEAT_NOTICE := 0.4
 const HEAT_SPOT := 1.0
 const REMONITOR_INT := 1.2
@@ -154,6 +164,12 @@ var _eye_key := ""
 var _last_alert_pos := Vector3.ZERO
 var _last_alert_valid := false
 var _mem_used := 0
+var _last_seen_position := Vector3.ZERO
+var _last_seen_valid := false
+var _beam: MeshInstance3D
+var _spotlight: SpotLight3D
+var _beam_material: ShaderMaterial
+var _beam_tint := Color.WHITE
 
 @onready var _rig: Node3D = $Rig
 
@@ -173,15 +189,18 @@ func _ready() -> void:
 	add_child(_sfx_alert)
 	_nav_agent = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
 	_cache_eye()
+	_setup_vision_visuals()
 	_update_eye(true)
 
 
 func get_alert() -> String:
 	match alert:
-		Alert.HEARD:
+		Alert.SUSPICIOUS:
 			return "HEARD"
 		Alert.SEEN:
 			return "SEEN"
+		Alert.SEARCH:
+			return "SEARCH"
 	return "IDLE"
 
 
@@ -217,6 +236,7 @@ func reset_droid() -> void:
 	alert = Alert.IDLE
 	suspicion = 0.0
 	_heat = 0.0
+	_last_seen_valid = false
 	_aggro_t = 0.0
 	_pause_t = 0.2
 	_has_target = false
@@ -243,15 +263,7 @@ func _physics_process(delta: float) -> void:
 		if alert == Alert.SEEN:
 			_track_player(player, delta)
 	_hearing(delta)
-	if alert == Alert.SEEN:
-		_aggro_t -= delta
-		if _aggro_t <= 0.0:
-			alert = Alert.HEARD
-			_aggro_t = SEARCH_DUR * randf_range(0.85, 1.25)
-			_target += Vector3(randf_range(-1.0, 1.0), 0.0, randf_range(-1.0, 1.0))
-			_strafe_t = 0.0
-			_push_nav_target()
-	elif alert == Alert.HEARD:
+	if alert == Alert.SUSPICIOUS or alert == Alert.SEARCH:
 		_aggro_t -= delta
 		if _aggro_t <= 0.0:
 			alert = Alert.IDLE
@@ -267,7 +279,7 @@ func _physics_process(delta: float) -> void:
 	var disp := maxf(_heat, suspicion)
 	if alert == Alert.SEEN:
 		disp = 1.0
-	elif alert == Alert.HEARD:
+	elif alert == Alert.SUSPICIOUS:
 		disp = maxf(disp, HEARD_GLOW)
 	suspicion = lerpf(suspicion, disp, 6.0 * delta)
 	_update_anim()
@@ -276,44 +288,49 @@ func _physics_process(delta: float) -> void:
 ## Vision mit Aufbau: rate = Kegel * Distanz * Bewegung; heat merkt sich.
 func _update_vision(p: Node3D, delta: float) -> void:
 	var rate := 0.0
-	var to: Vector3 = p.global_position - global_position
+	var visible := false
+	var to := p.global_position - global_position
 	to.y = 0.0
 	var dist := to.length()
-	var sprinting := false
-	if p.has_method("is_sprinting"):
-		sprinting = bool(p.call("is_sprinting"))
-	# Bewegungsform (Positionsdelta zwischen Frames, Input-agnostisch).
-	var moved := (p.global_position - _last_p_pos).length() > 0.03
-	if dist <= OMNI_R:
-		rate = 1.0
-	elif dist <= VISION_RANGE:
-		var cone_f := 0.0
-		if dist > 0.05:
-			var dn: float = facing.normalized().dot(to / dist)
-			if dn >= VISION_DOT:
-				cone_f = 1.0
-			elif dn >= VISION_DOT_WIDE:
-				cone_f = WIDE_F
-		if cone_f > 0.0:
-			var dist_f: float = clampf(1.0 - dist / VISION_RANGE * 0.8, 0.15, 1.0)
-			var move_f := 1.0
-			if sprinting:
-				move_f = SPRINT_MOD
-			elif moved:
-				move_f = MOVE_MOD
-			rate = cone_f * dist_f * move_f
-	if rate > 0.0 and _see_line(p):
-		_heat = clampf(_heat + rate * VISION_GAIN * delta, 0.0, HEAT_SPOT)
-		if _heat >= HEAT_SPOT:
-			if alert != Alert.SEEN:
-				_spot_player(p)
-		elif _heat >= HEAT_NOTICE and alert == Alert.HEARD:
+	if dist > 0.01 and dist <= sight_max:
+		var dn := facing.normalized().dot(to / dist)
+		var half_angle := deg_to_rad(half_angle_deg)
+		if dn >= cos(half_angle):
+			var offangle := clampf(acos(clampf(dn, -1.0, 1.0)) / half_angle, 0.0, 1.0)
+			visible = _see_line(p)
+			if visible:
+				rate = fill_base * _vision_distance_factor(dist) * maxf(0.0, dn * dn)
+				rate *= 1.0 + light_bonus_max * (1.0 - offangle)
+	if visible:
+		_heat = clampf(_heat + rate * delta, 0.0, HEAT_SPOT)
+		_last_seen_position = p.global_position
+		_last_seen_valid = true
+		if _heat >= HEAT_SPOT and alert != Alert.SEEN:
+			_spot_player(p)
+		elif _heat >= HEAT_NOTICE and alert == Alert.SUSPICIOUS:
 			_hec_t -= delta
 			if _hec_t <= 0.0:
 				_notice_player(p)
-	elif alert != Alert.SEEN:
-		_heat = maxf(0.0, _heat - VISION_COOL * delta)
+	else:
+		_heat = maxf(0.0, _heat - meter_decay * delta)
+		if alert == Alert.SEEN and dist > lose_sight_radius:
+			var lkp_dist := global_position.distance_to(_last_seen_position) if _last_seen_valid else INF
+			if lkp_dist > auto_success_range:
+				alert = Alert.SEARCH
+				_aggro_t = SEARCH_DUR
+				_target = Vector3(_last_seen_position.x, _spawn.y, _last_seen_position.z)
+				_has_target = true
+				_push_nav_target()
 	_last_p_pos = p.global_position
+	_update_beam_tint(delta)
+
+
+func _vision_distance_factor(dist: float) -> float:
+	if dist <= 10.0:
+		return 1.0
+	if dist <= fade_start:
+		return lerpf(1.0, 0.25, (dist - 10.0) / 20.0)
+	return 0.25 * (1.0 - smoothstep(fade_start, fade_end, dist))
 
 
 ## Reine Sichtlinie (ohne Kegel/Distanz, fuer Rate + Catch).
@@ -321,9 +338,17 @@ func _see_line(p: Node3D) -> bool:
 	if not (p is CollisionObject3D):
 		return false
 	var from: Vector3 = global_position + Vector3(0.0, EYE_H, 0.0)
-	var dst: Vector3 = p.global_position + Vector3(0.0, PLAYER_H, 0.0)
-	var query := PhysicsRayQueryParameters3D.create(from, dst, 1, [get_rid(), (p as CollisionObject3D).get_rid()])
+	var excludes: Array[RID] = [get_rid(), (p as CollisionObject3D).get_rid()]
+	var dst: Vector3 = p.global_position + Vector3(0.0, PLAYER_H * 0.5, 0.0)
+	var query := PhysicsRayQueryParameters3D.create(from, dst, 1, excludes)
 	var hit: Dictionary = get_world_3d().direct_space_state.intersect_ray(query)
+	if not hit.is_empty() and (hit["collider"] as Node) != p:
+		return false
+	if from.distance_to(dst) <= 0.5:
+		return true
+	dst = p.global_position + Vector3(0.0, PLAYER_H, 0.0)
+	query = PhysicsRayQueryParameters3D.create(from, dst, 1, excludes)
+	hit = get_world_3d().direct_space_state.intersect_ray(query)
 	return hit.is_empty() or (hit["collider"] as Node) == p
 
 
@@ -363,7 +388,7 @@ func _spot_player(p: Node3D) -> void:
 ## Uebergang von IDLE. Wird im Aufbau wiederholt (Ziel gedaempft neu gesenkt).
 func _notice_player(p: Node3D) -> void:
 	var was_idle := alert == Alert.IDLE
-	alert = Alert.HEARD
+	alert = Alert.SUSPICIOUS
 	_aggro_t = lerpf(AGGRO_MIN, AGGRO_MAX, _heat) * randf_range(0.9, 1.15)
 	var noise := lerpf(UNC_MAX, UNC_MIN, _heat)
 	_target = Vector3(
@@ -443,7 +468,7 @@ func receive_callout(pos: Vector3, seen: bool) -> void:
 	if alert == Alert.SEEN:
 		return
 	var unc := CALLOUT_UNC_SEEN if seen else CALLOUT_UNC
-	alert = Alert.HEARD
+	alert = Alert.SUSPICIOUS
 	_aggro_t = (SEEN_DUR * 0.9 if seen else lerpf(AGGRO_MIN, AGGRO_MAX, 0.35)) * randf_range(0.85, 1.1)
 	_target = Vector3(pos.x + randf_range(-unc, unc), _spawn.y, pos.z + randf_range(-unc, unc))
 	if not _nav_usable():
@@ -476,7 +501,7 @@ func _set_aggro(target: Vector3, dur: float, seen: bool) -> void:
 		if alert == Alert.IDLE:
 			_sfx_alert.stream = SFX_YELLOW
 			_sfx_alert.play()
-		alert = Alert.HEARD
+		alert = Alert.SUSPICIOUS
 	_aggro_t = dur * randf_range(0.85, 1.25)
 	var t := Vector3(target.x, _spawn.y, target.z)
 	if not seen and not _nav_usable():
@@ -521,6 +546,8 @@ func get_debug_stats() -> Dictionary:
 		"nav_steps": _dbg_nav_steps,
 		"alert": get_alert(),
 		"heat": snappedf(_heat, 0.001),
+		"meter": snappedf(_heat, 0.001),
+		"state": "SUSPICIOUS" if alert == Alert.SUSPICIOUS else get_alert(),
 	}
 
 
@@ -609,7 +636,7 @@ func _update_move(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, PATROL_SPEED * delta)
 		velocity.z = move_toward(velocity.z, 0.0, PATROL_SPEED * delta)
 		move_and_slide()
-		if alert == Alert.HEARD and _cool <= 0.0:
+		if alert == Alert.SUSPICIOUS and _cool <= 0.0:
 			var tpos: Vector3 = _target - global_position
 			tpos.y = 0.0
 			if tpos.length() < WP_TH + 0.2:
@@ -627,7 +654,7 @@ func _update_move(delta: float) -> void:
 		_stuck_t = 0.0
 		if alert == Alert.IDLE:
 			_pick_waypoint()
-		elif alert == Alert.HEARD and _cool <= 0.0:
+		elif alert == Alert.SUSPICIOUS and _cool <= 0.0:
 			_start_scan()
 		return
 	var dir: Vector3 = to.normalized()
@@ -788,6 +815,69 @@ func _update_anim() -> void:
 		_ap.play(want, 0.2)
 
 
+func _setup_vision_visuals() -> void:
+	var eye := Node3D.new()
+	eye.name = "VisionEye"
+	eye.position = Vector3(0.0, EYE_H, 0.0)
+	add_child(eye)
+	_spotlight = SpotLight3D.new()
+	_spotlight.light_color = beam_tint_idle
+	_spotlight.light_energy = 0.8
+	_spotlight.spot_angle = half_angle_deg
+	_spotlight.spot_range = sight_max
+	_spotlight.shadow_enabled = true
+	eye.add_child(_spotlight)
+	_beam = MeshInstance3D.new()
+	_beam.name = "DroidVisionBeam"
+	_beam.mesh = _make_beam_mesh()
+	var shader := load("res://assets/shaders/droid_beam.gdshader") as Shader
+	_beam_material = ShaderMaterial.new()
+	_beam_material.shader = shader
+	_beam_material.set_shader_parameter("beam_tint", beam_tint_idle)
+	_beam.material_override = _beam_material
+	eye.add_child(_beam)
+
+
+func _make_beam_mesh() -> ArrayMesh:
+	var mesh := ArrayMesh.new()
+	var verts := PackedVector3Array()
+	var uvs := PackedVector2Array()
+	var indices := PackedInt32Array()
+	var segments := 32
+	var near_d := 0.4
+	for ring in [near_d, sight_max]:
+		var radius: float = float(ring) * tan(deg_to_rad(half_angle_deg))
+		for i in range(segments):
+			var a := TAU * float(i) / float(segments)
+			verts.append(Vector3(cos(a) * radius, sin(a) * radius, -ring))
+			uvs.append(Vector2(float(i) / segments, (ring - near_d) / (sight_max - near_d)))
+	for i in range(segments):
+		var n := (i + 1) % segments
+		indices.append_array(PackedInt32Array([i, segments + i, segments + n, i, segments + n, n]))
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_TEX_UV] = uvs
+	arrays[Mesh.ARRAY_INDEX] = indices
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+
+func _update_beam_tint(delta: float) -> void:
+	var target := beam_tint_idle
+	if alert == Alert.SEEN:
+		target = beam_tint_seen
+	elif alert == Alert.SUSPICIOUS:
+		target = beam_tint_suspicious
+	_beam_tint = _beam_tint.lerp(target, clampf(delta, 0.0, 1.0))
+	if _beam_material != null:
+		_beam_material.set_shader_parameter("beam_tint", _beam_tint)
+	if _spotlight != null:
+		_spotlight.light_color = _beam_tint
+	if _beam != null:
+		_beam.rotation.y = atan2(-facing.x, -facing.z)
+
+
 ## Eye-/Beacon-Anzeige (2D-Original-Port): Mesh nach Alert-State,
 ## Glow nach Heat/Suspicion, SEEN pulsiert rot. Farben aus Blender.
 const EYE_STATES := ["IDLE", "HEARD", "SEEN"]
@@ -816,7 +906,7 @@ func _update_eye(force: bool = false) -> void:
 	var key := "IDLE"
 	if alert == Alert.SEEN:
 		key = "SEEN"
-	elif alert == Alert.HEARD:
+	elif alert == Alert.SUSPICIOUS:
 		key = "HEARD"
 	if not force and key == _eye_key:
 		_apply_eye_energy(key)
@@ -930,8 +1020,8 @@ func _suspicion_hearing_accumulate(delta: float, sig: float, ox: float, oz: floa
 ## HEARD-Ausgang aus Hearing: Ziel = Pseudo-Position mit Unschaerfe.
 func notice_heard_target(ox: float, oz: float, unc: float, dur: float) -> void:
 	# Anzeige-Suspicion auf den Hearing-Anteil bringen (kein Doppelfluss).
-	var old_heard := alert == Alert.HEARD
-	alert = Alert.HEARD
+	var old_heard := alert == Alert.SUSPICIOUS
+	alert = Alert.SUSPICIOUS
 	_aggro_t = dur * randf_range(0.85, 1.25)
 	var t := Vector3(ox + randf_range(-unc, unc), _spawn.y, oz + randf_range(-unc, unc))
 	if not _nav_usable():
