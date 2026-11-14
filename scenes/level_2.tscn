@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://hrb6m26oom2w"]
 
 [ext_resource type="Script" uid="uid://canmppag5u85b" path="res://scenes/exit_trigger.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://dhkxc7n5cjnyt" path="res://assets/maps/EchoCart_L2.glb" id="2"]
+[ext_resource type="PackedScene" uid="uid://bgd5xxdnt7ugd" path="res://assets/maps/EchoCart_L2.glb" id="2"]
 [ext_resource type="PackedScene" uid="uid://l1uxx6dvd1y5" path="res://scenes/player.tscn" id="3"]
 [ext_resource type="Environment" uid="uid://cb0hh7gkhdqbh" path="res://scenes/night_env.tres" id="4"]
 [ext_resource type="PackedScene" uid="uid://djaemtbpdo28g" path="res://scenes/e_droid.tscn" id="5"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="8_ne2mo"]
 [ext_resource type="PackedScene" path="res://scenes/victory.tscn" id="9_6cvei"]
 [ext_resource type="NavigationMesh" path="res://assets/nav/L2_navmesh.tres" id="10_nav"]
+[ext_resource type="Script" uid="uid://4xc3osg0at57" path="res://scenes/lamp_lights.gd" id="11_hey2k"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -26,7 +27,7 @@ script = ExtResource("1")
 shape = SubResource("BoxShape3D_exit")
 
 [node name="Player" parent="." unique_id=1173757820 instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.45234488, 85)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0.4523449, 85)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=716660771]
 environment = ExtResource("4")
@@ -64,3 +65,8 @@ transform = Transform3D(0.81915206, -0.38379756, 0.42625037, 0, 0.7431448, 0.669
 light_color = Color(0.74, 0.82, 1, 1)
 light_energy = 0.14
 shadow_enabled = true
+
+[node name="LampLights" type="Node3D" parent="." unique_id=884337542]
+script = ExtResource("11_hey2k")
+map_path = "EchoCart_L2"
+head_pattern = "L2_Lamp_Head_*"

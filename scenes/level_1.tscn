@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://ccweiit44ig06"]
 
 [ext_resource type="Script" uid="uid://canmppag5u85b" path="res://scenes/exit_trigger.gd" id="1"]
-[ext_resource type="PackedScene" uid="uid://cnm5ypbxfirr6" path="res://assets/maps/EchoCart_L1.glb" id="2"]
+[ext_resource type="PackedScene" uid="uid://dr0yuaaicy6gj" path="res://assets/maps/EchoCart_L1.glb" id="2"]
 [ext_resource type="PackedScene" uid="uid://djaemtbpdo28g" path="res://scenes/e_droid.tscn" id="4_btoec"]
 [ext_resource type="PackedScene" uid="uid://bor8li5lb3t37" path="res://assets/maps/FX_SonarPing_Ring.glb" id="5_gwceb"]
 [ext_resource type="PackedScene" uid="uid://l1uxx6dvd1y5" path="res://scenes/player.tscn" id="6"]
@@ -10,6 +10,7 @@
 [ext_resource type="PackedScene" path="res://scenes/ping_powerup.tscn" id="9"]
 [ext_resource type="PackedScene" path="res://scenes/game_over.tscn" id="9_e3sih"]
 [ext_resource type="NavigationMesh" path="res://assets/nav/L1_navmesh.tres" id="10_nav"]
+[ext_resource type="Script" path="res://scenes/lamp_lights.gd" id="11_2os1m"]
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_exit"]
 size = Vector3(1, 4, 3.6)
@@ -27,15 +28,15 @@ target_scene = "res://scenes/level_2.tscn"
 shape = SubResource("BoxShape3D_exit")
 
 [node name="E_Droid" parent="." unique_id=110288932 groups=["echo_receiver"] instance=ExtResource("4_btoec")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.9152265, -4.95910649e-06, 7.0936645)
-use_navmesh = true
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 58.915226, -4.9591063e-06, 7.0936646)
 roam_radius = 11.7
+use_navmesh = true
 
 [node name="FX_SonarPing_Ring2" parent="." unique_id=1758745563 instance=ExtResource("5_gwceb")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60.3399472, 0, 8.0048709)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60.339947, 0, 8.004871)
 
 [node name="Player" parent="." unique_id=2047181400 instance=ExtResource("6")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0.802591699, 33)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0.8025917, 33)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=313288506]
 environment = ExtResource("7")
@@ -61,3 +62,6 @@ transform = Transform3D(0.81915206, -0.38379756, 0.42625037, 0, 0.7431448, 0.669
 light_color = Color(0.74, 0.82, 1, 1)
 light_energy = 0.14
 shadow_enabled = true
+
+[node name="LampLights" type="Node3D" parent="." unique_id=2006064835]
+script = ExtResource("11_2os1m")
