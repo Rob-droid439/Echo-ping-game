@@ -6,6 +6,13 @@ Silhouette): am Droid-Kopf Radius 0, weiter vorn dicker, Radius ≈
 Protagonisten-Höhe bei ca. 10 m, ab ca. 30 m fades das Licht (und damit
 das Sichtfeld) weiter aus. Planung VOR Implementierung, Repo-Doku.
 
+**ERGEBNIS (2026-11-14): ✅ ZIEL ERREICHT — umgesetzt & abgenommen.**
+Sicht-Tracing (Detection-Meter, Hysterese/AutoSuccess, Flashlight-Kegel),
+Visier-Beam v7 (additiver Kegel, Screen-Depth-Contact-Fade, Silhouette-
+Feather, Dual-Spotlights, Render-Frame-Smoothing), Volumetric-Fog-Mond-
+Leak behoben (sky_affect/inject = 0). Lab- + Level-1-Abnahme ohne Befund.
+Details: Commits Stufe 11a–11c.
+
 ## 1) Recherche (Web, 2026-11-12) — Kernbefunde
 
 | Quelle | Befund für uns |
