@@ -118,6 +118,10 @@ func get_radius() -> float:
 	return _r_now
 
 
+func get_max_radius() -> float:
+	return rmax
+
+
 func _scan(radius: float) -> void:
 	for rec in get_tree().get_nodes_in_group("echo_receiver"):
 		if not (rec is Node3D) or rec in _hit:

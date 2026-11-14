@@ -35,14 +35,14 @@ const SVAR_INT_MAX := 0.65
 @export var light_bonus_max := 0.08
 @export var fade_start := 30.0
 @export var fade_end := 40.0
-@export var beam_tint_idle := Color(0.82, 0.88, 1.0)
+@export var beam_tint_idle := Color(0.58, 0.76, 1.0)
 @export var beam_tint_suspicious := Color(0.92, 0.86, 0.72)
 @export var beam_tint_seen := Color(1.0, 0.78, 0.72)
 const VISION_RANGE := 40.0
 const VISION_DOT := 0.9842
 const OMNI_R := 1.6
-const HEAT_NOTICE := 0.4
-const HEAT_SPOT := 1.0
+const HEAT_NOTICE := 0.32
+const HEAT_SPOT := 0.8
 const REMONITOR_INT := 1.2
 const EYE_H := 0.55
 const PLAYER_H := 1.0
@@ -50,18 +50,29 @@ const HEARD_GLOW := 0.35
 const SPRINT_MOD := 1.5
 const MOVE_MOD := 1.3
 
-const HEAR_RANGE := 18.0
+## Base ping radius is 25 m. Hearing tracks the ping's configured radius so
+## radius powerups also provide a bounded increase to acoustic reach.
+const PING_HEAR_FRACTION := 0.8
+const PING_HEAR_MAX := 28.0
+const PING_FALLOFF_EXPONENT := 1.5
 const SUS_GAIN := 12.0
 const SUS_DECAY := 0.14
-const SUS_TH := 0.12
-const SUS_CANCEL := 0.07
-const MIN_SIG := 0.01
+const SUS_TH := 0.108
+const SUS_CANCEL := 0.063
+const MIN_SIG := 0.009
 const ORIGIN_W := 0.48
 const WAVE_W := 0.72
 const WAVE_SIGMA := 4.6
-const OCCLUDE_DAMP := 0.88
-const FOOT_SPRINT_R := 7.0
-const FOOT_SPRINT_W := 0.09
+const OCCLUDE_DAMP := 0.70
+## Footsteps are full-strength through 5 m, then lose 20 percentage points
+## per metre. They reach zero at 10 m, keeping movement local while still
+## contributing to suspicion near the edge of a room.
+const FOOTSTEP_FULL_R := 5.0
+const FOOTSTEP_FADE_PER_M := 0.20
+const FOOTSTEP_FADE_R := 5.0
+const FOOTSTEP_MIN_SPEED := 0.5
+const FOOTSTEP_WALK_W := 0.075
+const FOOTSTEP_SPRINT_W := 0.12
 const LAT_MIN := 0.06
 const LAT_MAX := 0.2
 const SEARCH_MIN := 0.1
@@ -81,6 +92,7 @@ const SCAN_RATE := 1.6
 const FACE_LERP_PATROL := 6.0
 const FACE_LERP_ALERT := 10.0
 const NAV_PUSH_INT := 0.25
+const VISION_VISUAL_SMOOTH := 13.0
 
 const CATCH_DIST := 1.05
 const CATCH_H := 1.4
@@ -167,9 +179,20 @@ var _mem_used := 0
 var _last_seen_position := Vector3.ZERO
 var _last_seen_valid := false
 var _beam: MeshInstance3D
+var _beam_dust: GPUParticles3D
 var _spotlight: SpotLight3D
+var _spotlight_core: SpotLight3D
+var _vision_eye: Node3D
 var _beam_material: ShaderMaterial
 var _beam_tint := Color.WHITE
+var _vision_yaw := 0.0
+var _vision_yaw_target := 0.0
+var _vision_visual_position := Vector3.ZERO
+var _last_hearing_signal := 0.0
+var _last_hearing_distance := INF
+var _last_hearing_range := 0.0
+var _last_hearing_occluded := false
+var _last_hearing_source := "none"
 
 @onready var _rig: Node3D = $Rig
 
@@ -190,7 +213,39 @@ func _ready() -> void:
 	_nav_agent = get_node_or_null("NavigationAgent3D") as NavigationAgent3D
 	_cache_eye()
 	_setup_vision_visuals()
+	_vision_yaw = atan2(-facing.x, -facing.z)
+	_vision_yaw_target = _vision_yaw
+	_vision_visual_position = _vision_eye.global_position
 	_update_eye(true)
+
+
+func _process(delta: float) -> void:
+	# Visuals run at render frequency rather than physics frequency. This keeps
+	# the cone fluid even when the physics tick and display refresh differ.
+	_vision_yaw_target = atan2(-facing.x, -facing.z)
+	var yaw_sm := 1.0 - exp(-VISION_VISUAL_SMOOTH * delta)
+	_vision_yaw = lerp_angle(_vision_yaw, _vision_yaw_target, yaw_sm)
+	var eye_target := global_position + Vector3(0.0, EYE_H, 0.0)
+	_vision_visual_position = _vision_visual_position.lerp(
+		eye_target,
+		1.0 - exp(-VISION_VISUAL_SMOOTH * delta))
+	if _vision_eye != null:
+		_vision_eye.global_position = _vision_visual_position
+	# Beam axis after rotating the default -Z forward by the smoothed yaw.
+	var beam_fwd := Vector3(-sin(_vision_yaw), 0.0, -cos(_vision_yaw))
+	if _beam != null:
+		_beam.rotation.y = _vision_yaw
+	if _beam_dust != null:
+		_beam_dust.rotation.y = _vision_yaw
+	# The spotlights sit just in front of the head so the droid's own mesh
+	# cannot shadow its own beam; rotation and origin stay render-smoothed.
+	if _spotlight != null:
+		_spotlight.rotation.y = _vision_yaw
+		_spotlight.global_position = _vision_visual_position + beam_fwd * 0.5
+	if _spotlight_core != null:
+		_spotlight_core.rotation.y = _vision_yaw
+		_spotlight_core.global_position = _vision_visual_position + beam_fwd * 0.5
+	_update_beam_tint(delta)
 
 
 func get_alert() -> String:
@@ -236,12 +291,18 @@ func reset_droid() -> void:
 	alert = Alert.IDLE
 	suspicion = 0.0
 	_heat = 0.0
+	_hearing_accum = 0.0
 	_last_seen_valid = false
 	_aggro_t = 0.0
 	_pause_t = 0.2
 	_has_target = false
 	_pend = false
 	_cool = 0.0
+	_lat_t = 0.0
+	_search_t = 0.0
+	_pend_sig = 0.0
+	_pend_ox = 0.0
+	_pend_oz = 0.0
 	_scan_t = 0.0
 	_catch_grace = CATCH_GRACE
 	_last_alert_valid = false
@@ -288,7 +349,7 @@ func _physics_process(delta: float) -> void:
 ## Vision mit Aufbau: rate = Kegel * Distanz * Bewegung; heat merkt sich.
 func _update_vision(p: Node3D, delta: float) -> void:
 	var rate := 0.0
-	var visible := false
+	var player_visible := false
 	var to := p.global_position - global_position
 	to.y = 0.0
 	var dist := to.length()
@@ -297,11 +358,11 @@ func _update_vision(p: Node3D, delta: float) -> void:
 		var half_angle := deg_to_rad(half_angle_deg)
 		if dn >= cos(half_angle):
 			var offangle := clampf(acos(clampf(dn, -1.0, 1.0)) / half_angle, 0.0, 1.0)
-			visible = _see_line(p)
-			if visible:
+			player_visible = _see_line(p)
+			if player_visible:
 				rate = fill_base * _vision_distance_factor(dist) * maxf(0.0, dn * dn)
 				rate *= 1.0 + light_bonus_max * (1.0 - offangle)
-	if visible:
+	if player_visible:
 		_heat = clampf(_heat + rate * delta, 0.0, HEAT_SPOT)
 		_last_seen_position = p.global_position
 		_last_seen_valid = true
@@ -322,7 +383,6 @@ func _update_vision(p: Node3D, delta: float) -> void:
 				_has_target = true
 				_push_nav_target()
 	_last_p_pos = p.global_position
-	_update_beam_tint(delta)
 
 
 func _vision_distance_factor(dist: float) -> float:
@@ -547,6 +607,12 @@ func get_debug_stats() -> Dictionary:
 		"alert": get_alert(),
 		"heat": snappedf(_heat, 0.001),
 		"meter": snappedf(_heat, 0.001),
+		"hearing_accum": snappedf(_hearing_accum, 0.001),
+		"hearing_signal": snappedf(_last_hearing_signal, 0.001),
+		"hearing_distance": snappedf(_last_hearing_distance, 0.01),
+		"hearing_range": snappedf(_last_hearing_range, 0.01),
+		"hearing_occluded": _last_hearing_occluded,
+		"hearing_source": _last_hearing_source,
 		"state": "SUSPICIOUS" if alert == Alert.SUSPICIOUS else get_alert(),
 	}
 
@@ -820,13 +886,36 @@ func _setup_vision_visuals() -> void:
 	eye.name = "VisionEye"
 	eye.position = Vector3(0.0, EYE_H, 0.0)
 	add_child(eye)
+	_vision_eye = eye
 	_spotlight = SpotLight3D.new()
 	_spotlight.light_color = beam_tint_idle
-	_spotlight.light_energy = 0.8
-	_spotlight.spot_angle = half_angle_deg
+	_spotlight.light_energy = 4.0
+	_spotlight.light_indirect_energy = 0.25
+	_spotlight.light_volumetric_fog_energy = 0.22
+	_spotlight.light_specular = 0.25
+	_spotlight.light_size = 0.3
+	_spotlight.spot_angle = half_angle_deg * 1.5
+	_spotlight.spot_angle_attenuation = 1.15
+	_spotlight.spot_attenuation = 1.0
 	_spotlight.spot_range = sight_max
 	_spotlight.shadow_enabled = true
+	_spotlight.shadow_blur = 1.15
+	_spotlight.shadow_bias = 0.035
+	_spotlight.shadow_normal_bias = 1.0
 	eye.add_child(_spotlight)
+	_spotlight_core = SpotLight3D.new()
+	_spotlight_core.light_color = beam_tint_idle
+	_spotlight_core.light_energy = 2.2
+	_spotlight_core.light_indirect_energy = 0.12
+	_spotlight_core.light_volumetric_fog_energy = 0.55
+	_spotlight_core.light_specular = 0.45
+	_spotlight_core.light_size = 0.08
+	_spotlight_core.spot_angle = half_angle_deg * 1.2
+	_spotlight_core.spot_angle_attenuation = 1.35
+	_spotlight_core.spot_attenuation = 1.0
+	_spotlight_core.spot_range = sight_max * 0.72
+	_spotlight_core.shadow_enabled = false
+	eye.add_child(_spotlight_core)
 	_beam = MeshInstance3D.new()
 	_beam.name = "DroidVisionBeam"
 	_beam.mesh = _make_beam_mesh()
@@ -834,29 +923,105 @@ func _setup_vision_visuals() -> void:
 	_beam_material = ShaderMaterial.new()
 	_beam_material.shader = shader
 	_beam_material.set_shader_parameter("beam_tint", beam_tint_idle)
+	_beam_material.set_shader_parameter("beam_density", 1.0)
+	_beam_material.set_shader_parameter("beam_softness", 0.86)
 	_beam.material_override = _beam_material
 	eye.add_child(_beam)
+	_beam_dust = _make_beam_dust()
+	eye.add_child(_beam_dust)
+
+
+func _make_beam_dust() -> GPUParticles3D:
+	var particles := GPUParticles3D.new()
+	particles.name = "DroidVisionDust"
+	particles.amount = 500
+	particles.lifetime = 2.4
+	particles.randomness = 0.75
+	particles.preprocess = 1.8
+	particles.local_coords = true
+	particles.visibility_aabb = AABB(Vector3(-8.0, -8.0, -42.0), Vector3(16.0, 16.0, 42.0))
+
+	var process_material := ParticleProcessMaterial.new()
+	process_material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process_material.emission_box_extents = Vector3(0.22, 0.22, 0.15)
+	process_material.direction = Vector3(0.0, 0.0, -1.0)
+	process_material.spread = half_angle_deg * 1.15
+	process_material.initial_velocity_min = 5.0
+	process_material.initial_velocity_max = 10.0
+	process_material.damping_min = 1.0
+	process_material.damping_max = 2.5
+	process_material.gravity = Vector3.ZERO
+	process_material.scale_min = 0.08
+	process_material.scale_max = 0.22
+	var fade_gradient := Gradient.new()
+	fade_gradient.set_colors(PackedColorArray([
+		Color(0.35, 0.78, 1.0, 0.0),
+		Color(0.35, 0.78, 1.0, 0.75),
+		Color(0.35, 0.78, 1.0, 0.55),
+		Color(0.35, 0.78, 1.0, 0.0),
+	]))
+	fade_gradient.set_offsets(PackedFloat32Array([0.0, 0.18, 0.72, 1.0]))
+	var fade_ramp := GradientTexture1D.new()
+	fade_ramp.gradient = fade_gradient
+	process_material.color_ramp = fade_ramp
+	particles.process_material = process_material
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.11, 0.11)
+	var shader := Shader.new()
+	shader.code = """
+	shader_type spatial;
+	render_mode unshaded, blend_add, cull_disabled, depth_draw_never;
+
+	uniform sampler2D depth_tex : hint_depth_texture;
+
+	void fragment() {
+		vec2 centered = UV * 2.0 - 1.0;
+		float radial = 1.0 - smoothstep(0.15, 1.0, length(centered));
+		float depth = texture(depth_tex, SCREEN_UV).r;
+		vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
+		vec4 vview = INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
+		vview.xyz /= vview.w;
+		float diff = -vview.z + VERTEX.z;
+		float contact = clamp(1.0 - diff / 0.45, 0.0, 1.0);
+		ALBEDO = vec3(0.28, 0.72, 1.0);
+		EMISSION = vec3(0.20, 0.62, 1.0);
+		ALPHA = radial * 0.06 * COLOR.a * (1.0 - contact);
+	}
+	"""
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	quad.material = material
+	particles.draw_pass_1 = quad
+	particles.emitting = true
+	return particles
 
 
 func _make_beam_mesh() -> ArrayMesh:
 	var mesh := ArrayMesh.new()
 	var verts := PackedVector3Array()
+	var normals := PackedVector3Array()
 	var uvs := PackedVector2Array()
 	var indices := PackedInt32Array()
-	var segments := 32
+	var segments := 64
 	var near_d := 0.4
-	for ring in [near_d, sight_max]:
+	# Visual beam length: shorter than the detection range; a 40 m mesh pokes
+	# over occluders and reads as a floating glow behind walls.
+	var far_len := minf(sight_max, 26.0)
+	for ring in [near_d, far_len]:
 		var radius: float = float(ring) * tan(deg_to_rad(half_angle_deg))
 		for i in range(segments):
 			var a := TAU * float(i) / float(segments)
 			verts.append(Vector3(cos(a) * radius, sin(a) * radius, -ring))
-			uvs.append(Vector2(float(i) / segments, (ring - near_d) / (sight_max - near_d)))
+			normals.append(Vector3(cos(a), sin(a), tan(deg_to_rad(half_angle_deg))).normalized())
+			uvs.append(Vector2(float(i) / segments, (ring - near_d) / (far_len - near_d)))
 	for i in range(segments):
 		var n := (i + 1) % segments
 		indices.append_array(PackedInt32Array([i, segments + i, segments + n, i, segments + n, n]))
 	var arrays := []
 	arrays.resize(Mesh.ARRAY_MAX)
 	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
 	arrays[Mesh.ARRAY_TEX_UV] = uvs
 	arrays[Mesh.ARRAY_INDEX] = indices
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
@@ -869,13 +1034,13 @@ func _update_beam_tint(delta: float) -> void:
 		target = beam_tint_seen
 	elif alert == Alert.SUSPICIOUS:
 		target = beam_tint_suspicious
-	_beam_tint = _beam_tint.lerp(target, clampf(delta, 0.0, 1.0))
+	_beam_tint = _beam_tint.lerp(target, 1.0 - exp(-8.0 * delta))
 	if _beam_material != null:
 		_beam_material.set_shader_parameter("beam_tint", _beam_tint)
 	if _spotlight != null:
 		_spotlight.light_color = _beam_tint
-	if _beam != null:
-		_beam.rotation.y = atan2(-facing.x, -facing.z)
+	if _spotlight_core != null:
+		_spotlight_core.light_color = _beam_tint
 
 
 ## Eye-/Beacon-Anzeige (2D-Original-Port): Mesh nach Alert-State,
@@ -936,32 +1101,49 @@ func _apply_eye_energy(key: String) -> void:
 ## Fussgeraeuche bei Sprint-Naehe als kleines Vorsignal (origin = Spieler).
 func _hearing(delta: float) -> void:
 	var sig := 0.0
+	var strongest_source_sig := 0.0
 	var ox := 0.0
 	var oz := 0.0
+	_last_hearing_signal = 0.0
+	_last_hearing_distance = INF
+	_last_hearing_range = 0.0
+	_last_hearing_occluded = false
+	_last_hearing_source = "none"
 	var player: Node3D = get_tree().get_first_node_in_group("player") as Node3D
-	# Fussgeraeuche: Sprint in Naehe = amortisiertes Vorsignal.
-	if player != null and player.has_method("is_sprinting"):
-		var sp: bool = bool(player.call("is_sprinting"))
-		if sp:
+	# Footsteps are a continuous approximation of the movement sound. Walking
+	# and sprinting share the same hearing accumulator as pings.
+	if player != null:
+		var pv: Variant = player.get("velocity")
+		var planar_speed := 0.0
+		if pv is Vector3:
+			planar_speed = Vector2((pv as Vector3).x, (pv as Vector3).z).length()
+		if planar_speed > FOOTSTEP_MIN_SPEED:
 			var fp: Vector3 = global_position - player.global_position
 			fp.y = 0.0
 			var fd := fp.length()
-			if fd <= FOOT_SPRINT_R:
-				var fs: float = FOOT_SPRINT_W * (1.0 - fd / FOOT_SPRINT_R)
-				fs *= randf_range(0.9, 1.1)
-				if fs > sig:
-					sig = fs
+			var foot_fade := _footstep_distance_factor(fd)
+			var speed_t := clampf((planar_speed - FOOTSTEP_MIN_SPEED) / 7.0, 0.0, 1.0)
+			var foot_strength := lerpf(FOOTSTEP_WALK_W, FOOTSTEP_SPRINT_W, speed_t)
+			var fs := foot_strength * foot_fade
+			if fs > 0.0:
+				sig = minf(1.0, sig + fs)
+				if fs > strongest_source_sig:
+					strongest_source_sig = fs
 					ox = player.global_position.x
 					oz = player.global_position.z
+					_last_hearing_distance = fd
+					_last_hearing_range = FOOTSTEP_FULL_R + FOOTSTEP_FADE_R
+					_last_hearing_source = "footsteps"
 	for ping in get_tree().get_nodes_in_group("active_ping"):
 		var po: Vector3 = (ping as Node3D).global_position
 		var dd: Vector3 = global_position - po
 		dd.y = 0.0
 		var dist := dd.length()
-		if dist > HEAR_RANGE:
+		var hear_range := _ping_hear_range(ping)
+		if dist > hear_range:
 			continue
-		var fall := 1.0 - dist / HEAR_RANGE
-		fall *= fall
+		var fall := 1.0 - dist / hear_range
+		fall = pow(maxf(fall, 0.0), PING_FALLOFF_EXPONENT)
 		var r := 12.5
 		if ping.has_method("get_radius"):
 			r = float(ping.get_radius())
@@ -972,15 +1154,44 @@ func _hearing(delta: float) -> void:
 			excl.append((player as CollisionObject3D).get_rid())
 		var q := PhysicsRayQueryParameters3D.create(
 			global_position + Vector3(0.0, EYE_H, 0.0), po + Vector3(0.0, 0.5, 0.0), 1, excl)
-		if not get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+		var occluded := not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
+		if occluded:
 			s *= OCCLUDE_DAMP
 		s *= randf_range(0.9, 1.1)
 		s = clampf(s, 0.0, 1.0)
-		if s > sig:
-			sig = s
+		# Sound sources add together. The strongest source still supplies the
+		# investigation position, while the accumulator receives total energy.
+		sig = minf(1.0, sig + s)
+		if s > strongest_source_sig:
+			strongest_source_sig = s
 			ox = po.x
 			oz = po.z
+			_last_hearing_distance = dist
+			_last_hearing_range = hear_range
+			_last_hearing_occluded = occluded
+			_last_hearing_source = "ping"
+	_last_hearing_signal = sig
 	_suspicion_hearing_accumulate(delta, sig, ox, oz)
+
+
+func _footstep_distance_factor(dist: float) -> float:
+	if dist <= FOOTSTEP_FULL_R:
+		return 1.0
+	return clampf(
+		1.0 - (dist - FOOTSTEP_FULL_R) * FOOTSTEP_FADE_PER_M,
+		0.0,
+		1.0)
+
+
+func _ping_hear_range(ping: Node) -> float:
+	var max_radius := 25.0
+	if ping.has_method("get_max_radius"):
+		max_radius = float(ping.call("get_max_radius"))
+	else:
+		var configured: Variant = ping.get("rmax")
+		if configured is float or configured is int:
+			max_radius = float(configured)
+	return minf(PING_HEAR_MAX, max_radius * PING_HEAR_FRACTION)
 
 
 ## Suspicion-Akkumulator aus Hearing (Kernloop des 2D-Ports: Latenz +
@@ -989,10 +1200,14 @@ var _hearing_accum := 0.0
 
 
 func _suspicion_hearing_accumulate(delta: float, sig: float, ox: float, oz: float) -> void:
-	# Anzeige-Anteil: _hearing akumuliert nur, wenn nicht schon SEEN jagd.
-	_hearing_accum = clampf(_hearing_accum + sig * SUS_GAIN * delta - SUS_DECAY * delta, 0.0, 1.0)
+	# A new hearing event starts cleanly after an alert; do not bank signal while
+	# already investigating or chasing, otherwise the next IDLE frame can
+	# immediately re-trigger without a fresh sound.
 	if alert != Alert.IDLE:
+		_hearing_accum = move_toward(_hearing_accum, 0.0, SUS_DECAY * 4.0 * delta)
+		_pend = false
 		return
+	_hearing_accum = clampf(_hearing_accum + sig * SUS_GAIN * delta - SUS_DECAY * delta, 0.0, 1.0)
 	if _pend and _hearing_accum < SUS_CANCEL:
 		_pend = false
 		return
